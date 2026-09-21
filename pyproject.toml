@@ -1,0 +1,94 @@
+[project]
+name = "reqjs"
+version = "0.1.0"
+description = "QuickJS regex engine for Python"
+readme = "README.md"
+authors = [
+    { name = "Bart Lengkeek", email = "bart@lengkeek.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["reqjs"]
+
+[[tool.setuptools.ext-modules]]
+name = "reqjs._reqjs"
+sources = [
+    "quickjs/cutils.c",
+    "quickjs/libunicode.c",
+    "quickjs/libregexp.c",
+    "src/reqjsc/reqjs.c",
+]
+depends = [
+    "quickjs/cutils.h",
+    "quickjs/libunicode.h",
+    "quickjs/libunicode-table.h",
+    "quickjs/libregexp.h",
+    "quickjs/libregexp-opcode.h",
+]
+include-dirs = ["quickjs"]
+
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "quickjs/cutils.c" },
+    { file = "quickjs/cutils.h" },
+    { file = "quickjs/libunicode.c" },
+    { file = "quickjs/libunicode.h" },
+    { file = "quickjs/libunicode-table.h" },
+    { file = "quickjs/libregexp.c" },
+    { file = "quickjs/libregexp.h" },
+    { file = "quickjs/libregexp-opcode.h"},
+    { file = "src/reqjsc/reqjs.c" },
+]
+
+
+[dependency-groups]
+dev = [
+    "coverage>=7.15.0",
+    "mypy>=2.2.0",
+    "nox>=2026.4.10",
+    "pyright>=1.1.411",
+    "ruff>=0.15.20",
+    "setuptools>=83.0.0",
+    "ty>=0.0.72",
+]
+docs = [
+    "furo>=2025.12.19",
+    "sphinx>=8.1.3",
+    "sphinx-rtd-theme>=3.1.0",
+]
+
+[tool.mypy]
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+packages = ["reqjs"]
+strict = true
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pyright]
+include = ["src"]
+strict = ["src"]
+
+[tool.ty.src]
+include = ["./src"]
