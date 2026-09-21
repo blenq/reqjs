@@ -108,16 +108,8 @@ V: RegexFlag
 UNICODE_SETS: RegexFlag
 
 
-# pyright: reportConstantRedefinition=false
 if sys.version_info < (3, 11):
-    NOFLAG = RegexFlag.NOFLAG
-    I = IGNORECASE = RegexFlag.IGNORECASE  # noqa: E741
-    M = MULTILINE = RegexFlag.MULTILINE
-    S = DOTALL = RegexFlag.DOTALL
-    U = UNICODE = RegexFlag.UNICODE
-    Y = STICKY = RegexFlag.STICKY
-    NAMED_GROUPS = RegexFlag.NAMED_GROUPS
-    V = UNICODE_SETS = RegexFlag.UNICODE_SETS
+    globals().update(RegexFlag.__members__)
 else:
     RegexFlag = enum.global_enum(RegexFlag)  # type: ignore[misc]
 
