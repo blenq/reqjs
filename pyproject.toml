@@ -29,7 +29,6 @@ packages = ["reqjs"]
 [[tool.setuptools.ext-modules]]
 name = "reqjs._reqjs"
 sources = [
-    "quickjs/cutils.c",
     "quickjs/libunicode.c",
     "quickjs/libregexp.c",
     "src/reqjsc/reqjs.c",
@@ -47,7 +46,6 @@ include-dirs = ["quickjs"]
 [tool.uv]
 cache-keys = [
     { file = "pyproject.toml" },
-    { file = "quickjs/cutils.c" },
     { file = "quickjs/cutils.h" },
     { file = "quickjs/libunicode.c" },
     { file = "quickjs/libunicode.h" },

@@ -18,16 +18,16 @@
 #endif /* PY_VERSION_HEX >= 0x030D0000 && PY_VERSION_HEX < 0x030E0000 */
 
 /* Include quickjs regular expression lib (libregexp) */
-#include "cutils.h" /* unicode_to_utf8, get_hi_surrogate, get_lo_surrogate */
+#include "cutils.h" /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
 #include "libregexp.h"
 
 
 /* Implementations needed by libregexp */
 
-int
+bool
 lre_check_stack_overflow(void *opaque, size_t alloca_size)
 {
-    return 0;
+    return false;
 }
 
 
@@ -897,14 +897,8 @@ cesu8_encode(PyObject *str, size_t *buf_len)
         Py_UCS4 kar = str_data[i];
         int inc;
 
-        if (kar < 0x80) {
-            inc = 1;
-        }
-        else if (kar < 0x800) {
-            inc = 2;
-        }
-        else if (kar < 0x10000) {
-            inc = 3;
+        if (kar < 0x10000) {
+            inc = utf8_encode_len(kar);
         }
         else if (kar < 0x110000) {
             // Non-BMP, 3 bytes per surrogate code unit
@@ -938,12 +932,12 @@ cesu8_encode(PyObject *str, size_t *buf_len)
         Py_UCS4 kar = str_data[i];
         if (kar < 0x10000) {
             // BMP character - regular UTF-8 encode
-            p += unicode_to_utf8(p, kar);
+            p += utf8_encode(p, kar);
         }
         else {
             // Non-BMP character - UTF-8 encode the surrogate pair
-            p += unicode_to_utf8(p, get_hi_surrogate(kar));
-            p += unicode_to_utf8(p, get_lo_surrogate(kar));
+            p += utf8_encode(p, get_hi_surrogate(kar));
+            p += utf8_encode(p, get_lo_surrogate(kar));
         }
     }
     *p = '\0';  // Add terminating zero
