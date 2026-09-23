@@ -615,8 +615,10 @@ _match_exec(ReQJSMatch *match)
                        arithmetic and adjust byte index for 16 byte character
                        values
                      */
-                    span[0] = (ptr_span[0] - match->string_data) >> shift;
-                    span[1] = (ptr_span[1] - match->string_data) >> shift;
+                    span[0] =
+                        (int)((ptr_span[0] - match->string_data) >> shift);
+                    span[1] =
+                        (int)((ptr_span[1] - match->string_data) >> shift);
                 }
                 else {
                     /* Non-contributing group */
@@ -895,7 +897,7 @@ cesu8_encode(PyObject *str, size_t *buf_len)
     // Calculate the required buffer size
     for (i = 0; i < str_length; i++) {
         Py_UCS4 kar = str_data[i];
-        int inc;
+        size_t inc;
 
         if (kar < 0x10000) {
             inc = utf8_encode_len(kar);
@@ -1121,21 +1123,21 @@ ReQJSPattern_search(ReQJSPattern *self,
 
 
 static PyObject *
-ReQJSPattern_flags(ReQJSPattern *self, void *)
+ReQJSPattern_flags(ReQJSPattern *self, void *unused)
 {
     return PyLong_FromLong(_pattern_flags(self));
 }
 
 
 static PyObject *
-ReQJSPattern_groups(ReQJSPattern *self, void *)
+ReQJSPattern_groups(ReQJSPattern *self, void *unused)
 {
     return PyLong_FromLong(_pattern_capture_count(self) - 1);
 }
 
 
 static PyObject *
-ReQJSPattern_groupindex(ReQJSPattern *self, void *)
+ReQJSPattern_groupindex(ReQJSPattern *self, void *unused)
 {
     if (self->groupindex == NULL) {
         return PyDict_New();
