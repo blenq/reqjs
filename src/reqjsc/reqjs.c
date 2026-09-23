@@ -13,10 +13,6 @@
 #define Py_READONLY    READONLY
 #endif /* PY_VERSION_HEX < 0x030C0000 */
 
-#if PY_VERSION_HEX >= 0x030D0000 && PY_VERSION_HEX < 0x030E0000
-#define PyUnicode_Equal _PyUnicode_Equal
-#endif /* PY_VERSION_HEX >= 0x030D0000 && PY_VERSION_HEX < 0x030E0000 */
-
 /* Include quickjs regular expression lib (libregexp) */
 #include "cutils.h" /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
 #include "libregexp.h"
@@ -1196,12 +1192,12 @@ ReQJSPattern_richcompare(ReQJSPattern *self, PyObject *other_obj, int op)
     cmp = _pattern_flags(self) == _pattern_flags(other);
 
     if (cmp) {
-#if PY_VERSION_HEX < 0x030D0000
-        int ucmp = PyUnicode_Compare(self->pattern, other->pattern);
-        if (ucmp == -1 && PyErr_Occurred()) {
+#if PY_VERSION_HEX < 0x030E0000
+        cmp = PyUnicode_Compare(self->pattern, other->pattern);
+        if (cmp == -1 && PyErr_Occurred()) {
             return NULL;
         }
-        cmp = ucmp == 0;
+        cmp = cmp == 0;
 #else
         cmp = PyUnicode_Equal(self->pattern, other->pattern);
         if (cmp == -1) {
