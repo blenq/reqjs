@@ -1,7 +1,7 @@
 [project]
 name = "reqjs"
 version = "0.1.0"
-description = "QuickJS regex engine for Python"
+description = "QuickJS-NG regex engine for Python"
 readme = "README.md"
 authors = [
     { name = "Bart Lengkeek", email = "bart@lengkeek.com" }
