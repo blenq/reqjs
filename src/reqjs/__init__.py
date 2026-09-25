@@ -333,6 +333,17 @@ class Pattern(_reqjs.Pattern):
         cls._cache.clear()
         cls._cache2.clear()
 
+    def __repr__(self) -> str:
+        if self.flags is RegexFlag.UNICODE:
+            return (
+                f"{self.__module__}.{self.__class__.__name__}"
+                f"({self.pattern!r})"
+            )
+        return (
+            f"{self.__module__}.{self.__class__.__name__}"
+            f"({self.pattern!r}, {self.flags!r})"
+        )
+
 
 compile = Pattern
 """Alias of :py:class:`Pattern` analogous to the standard

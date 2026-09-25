@@ -1,3 +1,5 @@
+import re
+import weakref
 from unittest import TestCase
 
 import reqjs
@@ -289,4 +291,39 @@ class PatternCase(TestCase):
             reqjs.Pattern(r"\w{2}", reqjs.UNICODE | reqjs.UNICODE_SETS)
         self.assertEqual(
             exc_ctx.exception.args[0], "Invalid regular expression flags"
+        )
+
+
+class TestAnalogy(TestCase):
+    def test_pattern_weakref(self):
+        for mod in re, reqjs:
+            with self.subTest(mod=mod):
+                p = mod.compile(r"\w{2}")
+                ref = weakref.ref(p)
+                self.assertIs(ref(), p)
+
+    def test_match_weakref(self):
+        for mod in re, reqjs:
+            with self.subTest(mod=mod):
+                m = mod.search(r"\w{2}", "hi")
+                self.assertIsNotNone(m)
+                with self.assertRaises(TypeError):
+                    weakref.ref(m)
+
+    def test_pattern_repr(self):
+
+        p = re.compile("\\w{2}")
+        self.assertEqual(repr(p), r"re.compile('\\w{2}')")
+
+        p = re.compile("\\w{2}", re.ASCII | re.IGNORECASE)
+        self.assertEqual(
+            repr(p), r"re.compile('\\w{2}', re.IGNORECASE|re.ASCII)"
+        )
+
+        p = reqjs.compile("\\w{2}")
+        self.assertEqual(repr(p), r"reqjs.Pattern('\\w{2}')")
+
+        p = reqjs.compile("\\w{2}", reqjs.STICKY | reqjs.IGNORECASE)
+        self.assertEqual(
+            repr(p), r"reqjs.Pattern('\\w{2}', reqjs.IGNORECASE|reqjs.STICKY)"
         )
