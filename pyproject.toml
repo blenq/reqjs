@@ -90,3 +90,7 @@ strict = ["src"]
 
 [tool.ty.src]
 include = ["./src"]
+
+
+[tool.cibuildwheel]
+test-command = "python -m unittest discover -s {project}"

@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 .nox/
+wheelhouse/
 *.egg-info
 *.coverage
 *.pyd
