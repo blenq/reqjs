@@ -203,9 +203,10 @@ ReQJS_dealloc(PyObject *self)
 
 
 static PyObject *
-_match_group_from_span(ReQJSMatch *match, int *span, PyObject *empty)
+_match_group_from_idx(ReQJSMatch *match, Py_ssize_t idx, PyObject *empty)
 {
     /* Return the string that makes up a group */
+    int *span = match->spans[idx];
     if (span[0] == -1) {
         return Py_NewRef(empty);
     }
@@ -213,15 +214,15 @@ _match_group_from_span(ReQJSMatch *match, int *span, PyObject *empty)
 }
 
 
-static int *
-_match_span_from_obj(ReQJSMatch *match, PyObject *py_idx)
+static Py_ssize_t
+_match_idx_from_obj(ReQJSMatch *match, PyObject *py_obj)
 {
-    /* Converts python group index number or name into group span */
+    /* Checks python group index number or name and return the index */
     Py_ssize_t idx;
 
-    if (PyIndex_Check(py_idx)) {
+    if (PyIndex_Check(py_obj)) {
         /* Index is a number */
-        idx = PyNumber_AsSsize_t(py_idx, NULL);
+        idx = PyNumber_AsSsize_t(py_obj, NULL);
     }
     else {
         /* Index is not a number, try to interpret as group name and get
@@ -234,7 +235,7 @@ _match_span_from_obj(ReQJSMatch *match, PyObject *py_idx)
         if (groupindex) {
             PyObject *py_long_idx;
 
-            py_long_idx = PyDict_GetItemWithError(groupindex, py_idx);
+            py_long_idx = PyDict_GetItemWithError(groupindex, py_obj);
             if (py_long_idx) {
                 idx = PyLong_AsSsize_t(py_long_idx);
             }
@@ -246,24 +247,24 @@ _match_span_from_obj(ReQJSMatch *match, PyObject *py_idx)
         if (!PyErr_Occurred()) {
             PyErr_SetString(PyExc_IndexError, "no such group");
         }
-        return NULL;
+        return -1;
     }
 
-    return match->spans[idx];
+    return idx;
 }
 
 
 static PyObject *
-_match_group_from_idx(ReQJSMatch *match, PyObject *idx, PyObject *empty)
+ReQJSMatch_getitem(ReQJSMatch *match, PyObject *obj)
 {
     /* Get the string that makes up the requested group */
-    int *span;
+    Py_ssize_t idx;
 
-    span = _match_span_from_obj(match, idx);
-    if (span == NULL) {
+    idx = _match_idx_from_obj(match, obj);
+    if (idx == -1) {
         return NULL;
     }
-    return _match_group_from_span(match, span, empty);
+    return _match_group_from_idx(match, idx, Py_None);
 }
 
 
@@ -275,11 +276,11 @@ ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 
     if (nargs == 0) {
         /* No args, return the first group, i.e. the full match */
-        return _match_group_from_span(self, self->spans[0], Py_None);
+        return _match_group_from_idx(self, 0, Py_None);
     }
     if (nargs == 1) {
         /* Return the requested group content */
-        return _match_group_from_idx(self, args[0], Py_None);
+        return ReQJSMatch_getitem(self, args[0]);
     }
     /* Return a tuple of the requested groups */
     groups = PyTuple_New(nargs);
@@ -287,7 +288,7 @@ ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
         return NULL;
     }
     for (i = 0; i < nargs; i++) {
-        PyObject *group = _match_group_from_idx(self, args[i], Py_None);
+        PyObject *group = ReQJSMatch_getitem(self, args[i]);
         if (group == NULL) {
             Py_DECREF(groups);
             return NULL;
@@ -298,25 +299,20 @@ ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 }
 
 
-static PyObject *
-ReQJSMatch_getitem(ReQJSMatch *self, PyObject *index)
+static Py_ssize_t
+_match_idx_from_args(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 {
-    return _match_group_from_idx(self, index, Py_None);
-}
-
-
-static int *
-_match_span(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
-{
-    /* Helper function that checks args and returns the requested group span */
+    /* Helper function that checks args and returns the requested group span
+       index.
+    */
     if (nargs == 0) {
-        return self->spans[0];
+        return 0;
     }
     if (nargs == 1) {
-        return _match_span_from_obj(self, args[0]);
+        return _match_idx_from_obj(self, args[0]);
     }
     PyErr_SetString(PyExc_ValueError, "Too many arguments");
-    return NULL;
+    return -1;
 }
 
 
@@ -327,13 +323,13 @@ _match_start_end(ReQJSMatch *self,
                  size_t start_end)
 {
     /* Return the start or end index of a group span */
-    int *span;
+    Py_ssize_t idx;
 
-    span = _match_span(self, args, nargs);
-    if (span == NULL) {
+    idx = _match_idx_from_args(self, args, nargs);
+    if (idx == -1) {
         return NULL;
     }
-    return PyLong_FromLong(span[start_end]);
+    return PyLong_FromLong(self->spans[idx][start_end]);
 }
 
 
@@ -357,12 +353,14 @@ static PyObject *
 ReQJSMatch_span(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 {
     /* Returns the requested group span as a tuple of python ints */
+    Py_ssize_t idx;
     int *span;
 
-    span = _match_span(self, args, nargs);
-    if (span == NULL) {
+    idx = _match_idx_from_args(self, args, nargs);
+    if (idx == -1) {
         return NULL;
     }
+    span = self->spans[idx];
     return Py_BuildValue("ii", span[0], span[1]);
 }
 
@@ -760,8 +758,7 @@ ReQJSMatch_expand(ReQJSMatch *self, PyObject *args, PyObject *kwargs)
         goto done;
     }
     for (i = 0; i < Py_SIZE(self); i++) {
-        PyObject *arg =
-            _match_group_from_span(self, self->spans[i], empty_str);
+        PyObject *arg = _match_group_from_idx(self, i, empty_str);
         if (arg == NULL) {
             goto done;
         }
@@ -807,11 +804,11 @@ match_repr(ReQJSMatch *self)
     PyObject *match_str;
     int *span;
 
-    span = self->spans[0];
-    match_str = _match_group_from_span(self, span, Py_None);
+    match_str = _match_group_from_idx(self, 0, Py_None);
     if (match_str == NULL) {
         return NULL;
     }
+    span = self->spans[0];
     result = PyUnicode_FromFormat("<%s object; span=(%d, %d), match=%.50R>",
                                   Py_TYPE(self)->tp_name, span[0], span[1],
                                   match_str);
