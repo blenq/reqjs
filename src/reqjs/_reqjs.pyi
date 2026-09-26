@@ -7,8 +7,6 @@ if sys.version_info < (3, 11):
 else:
     from typing import Self
 
-import reqjs
-
 # The Any trick
 # https://typing.python.org/en/latest/guides/writing_stubs.html#the-any-trick
 MaybeNone: TypeAlias = Any
@@ -40,7 +38,7 @@ class Match:
     def __getitem__(self, item: int | str) -> str: ...
 
 class Pattern:
-    def __new__(cls, pattern: str, flags: int = reqjs.UNICODE) -> Self: ...
+    def __new__(cls, pattern: str, flags: int) -> Self: ...
     @property
     def pattern(self) -> str: ...
     @property

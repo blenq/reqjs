@@ -92,20 +92,21 @@ class RegexFlag(enum.IntFlag):
             return "|".join(vals)
 
 
-NOFLAG: RegexFlag
-I: RegexFlag  # noqa: E741
-IGNORECASE: RegexFlag
-M: RegexFlag
-MULTILINE: RegexFlag
-S: RegexFlag
-DOTALL: RegexFlag
-U: RegexFlag
-UNICODE: RegexFlag
-Y: RegexFlag
-STICKY: RegexFlag
-NAMED_GROUPS: RegexFlag
-V: RegexFlag
-UNICODE_SETS: RegexFlag
+if TYPE_CHECKING:
+    NOFLAG = RegexFlag.NOFLAG
+    I = RegexFlag.I  # noqa: E741
+    IGNORECASE = RegexFlag.IGNORECASE
+    M = RegexFlag.M
+    MULTILINE = RegexFlag.MULTILINE
+    S = RegexFlag.S
+    DOTALL = RegexFlag.DOTALL
+    U = RegexFlag.U
+    UNICODE = RegexFlag.UNICODE
+    Y = RegexFlag.Y
+    STICKY = RegexFlag.STICKY
+    NAMED_GROUPS = RegexFlag.NAMED_GROUPS
+    V = RegexFlag.V
+    UNICODE_SETS = RegexFlag.UNICODE_SETS
 
 
 if sys.version_info < (3, 11):
@@ -148,9 +149,7 @@ class Pattern(_reqjs.Pattern):
     _MAXCACHE = 512
     _MAXCACHE2 = 256
 
-    def __new__(
-        cls, pattern: str, flags: _FlagsType = RegexFlag.UNICODE
-    ) -> "Self":
+    def __new__(cls, pattern: str, flags: _FlagsType = UNICODE) -> "Self":
         """Returns a compiled regular expression pattern"""
 
         # This caching mechanism is implemented with (slightly modified) code,
@@ -334,14 +333,10 @@ class Pattern(_reqjs.Pattern):
         cls._cache2.clear()
 
     def __repr__(self) -> str:
-        if self.flags is RegexFlag.UNICODE:
-            return (
-                f"{self.__module__}.{self.__class__.__name__}"
-                f"({self.pattern!r})"
-            )
         return (
             f"{self.__module__}.{self.__class__.__name__}"
-            f"({self.pattern!r}, {self.flags!r})"
+            f"({repr(self.pattern)[:200]}"
+            f"{'' if self.flags is UNICODE else f', {self.flags!r}'})"
         )
 
 
@@ -353,7 +348,7 @@ compile = Pattern
 def search(
     pattern: str,
     string: str,
-    flags: _FlagsType = RegexFlag.UNICODE,
+    flags: _FlagsType = UNICODE,
 ) -> Match | None:
     """Searches for a pattern in a string
 
@@ -371,7 +366,7 @@ def search(
 def test(
     pattern: str,
     string: str,
-    flags: _FlagsType = RegexFlag.UNICODE,  # noqa: F821
+    flags: _FlagsType = UNICODE,  # noqa: F821
 ) -> bool:
     """Checks if a pattern is found in a string
 
@@ -391,7 +386,7 @@ def test(
 
 
 def finditer(
-    pattern: str, string: str, flags: _FlagsType = RegexFlag.UNICODE
+    pattern: str, string: str, flags: _FlagsType = UNICODE
 ) -> Iterator[Match]:
     """A generator that yields non-overlapping matches
 
@@ -407,7 +402,7 @@ def finditer(
 def prefixmatch(
     pattern: str,
     string: str,
-    flags: _FlagsType = RegexFlag.UNICODE | RegexFlag.STICKY,
+    flags: _FlagsType = UNICODE | STICKY,
 ) -> Match | None:
     """Searches for a pattern at the beginning of a string
 
@@ -422,14 +417,14 @@ def prefixmatch(
     :rtype: :py:class:`Match` | :py:data:`None`
 
     """
-    flags = RegexFlag.STICKY | flags  # noqa: F821
+    flags = STICKY | flags  # noqa: F821
     return Pattern(pattern, flags).search(string)
 
 
 def fullmatch(
     pattern: str,
     string: str,
-    flags: _FlagsType = RegexFlag.UNICODE | RegexFlag.STICKY,
+    flags: _FlagsType = UNICODE | STICKY,
 ) -> Match | None:
     """Return a :py:class:`Match` object if the *whole* string matches the
     pattern.
@@ -445,14 +440,14 @@ def fullmatch(
     :rtype: :py:class:`Match` | :py:data:`None`
 
     """
-    flags = RegexFlag.STICKY | flags  # noqa: F821
+    flags = STICKY | flags  # noqa: F821
     return Pattern(pattern, flags).fullmatch(string)
 
 
 def findall(
     pattern: str,
     string: str,
-    flags: _FlagsType = RegexFlag.UNICODE,
+    flags: _FlagsType = UNICODE,
 ) -> list[str | tuple[str, ...]]:
     """
     Return all non-overlapping matches of *pattern* in *string*, as a list of
@@ -496,7 +491,7 @@ def split(
     string: str,
     *,
     maxsplit: int = 0,
-    flags: _FlagsType = RegexFlag.UNICODE,
+    flags: _FlagsType = UNICODE,
 ) -> list[str | MaybeNone]:
     """Split *string* by the occurrences of *pattern*.
 
@@ -543,7 +538,7 @@ def sub(
     string: str,
     *,
     count: int = 0,
-    flags: _FlagsType = RegexFlag.UNICODE,
+    flags: _FlagsType = UNICODE,
 ) -> str:
     return Pattern(pattern, flags).sub(repl, string, count)
 

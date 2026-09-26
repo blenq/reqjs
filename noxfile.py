@@ -9,37 +9,37 @@ nox.options.allow_parallel = True
 
 
 @nox.session(python=py_versions)
-def mypy(session):
+def mypy(session: nox.Session):
     session.install("mypy")
     session.run("mypy")
 
 
 @nox.session(python=py_versions)
-def pyright(session):
+def pyright(session: nox.Session):
     session.install("pyright")
     session.run("pyright")
 
 
 @nox.session(python=py_versions)
-def ty(session):
+def ty(session: nox.Session):
     session.install("ty")
     session.run("ty", "check")
 
 
 @nox.session(python=py_versions[0])
-def ruff_format(session):
+def ruff_format(session: nox.Session):
     session.install("ruff")
     session.run("ruff", "format")
 
 
 @nox.session(python=py_versions[0])
-def ruff_lint(session):
+def ruff_lint(session: nox.Session):
     session.install("ruff")
     session.run("ruff", "check")
 
 
 @nox.session(python=py_versions[0])
-def clang_format(session):
+def clang_format(session: nox.Session):
     session.install("clang-format")
     session.run(
         "clang-format",
@@ -50,6 +50,6 @@ def clang_format(session):
 
 
 @nox.session(python=py_versions)
-def unittest(session):
+def unittest(session: nox.Session):
     session.install("coverage")
     session.run("uv", "run", "--no-dev", "coverage", "run", "-m", "unittest")
