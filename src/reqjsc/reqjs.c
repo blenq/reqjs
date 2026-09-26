@@ -800,6 +800,23 @@ done:
 }
 
 
+static PyObject *
+match_repr(ReQJSMatch *self)
+{
+    PyObject *result;
+    int *span = self->spans[0];
+    PyObject *group0 = _match_group_from_span(self, span, Py_None);
+    if (group0 == NULL) {
+        return NULL;
+    }
+    result = PyUnicode_FromFormat("<%s object; span=(%zd, %zd), match=%.50R>",
+                                  Py_TYPE(self)->tp_name, span[0], span[1],
+                                  group0);
+    Py_DECREF(group0);
+    return result;
+}
+
+
 PyDoc_STRVAR(reqjs_match_doc, "A Match object.");
 PyDoc_STRVAR(
     _match_start_doc,
@@ -851,6 +868,7 @@ static PyMemberDef ReQJSMatch_members[] = {
 
 static PyType_Slot match_type_slots[] = {
     { Py_tp_doc,       (char *)reqjs_match_doc },
+    { Py_tp_repr,      match_repr              },
     { Py_tp_traverse,  ReQJSMatch_traverse     },
     { Py_tp_clear,     ReQJSMatch_clear        },
     { Py_tp_dealloc,   ReQJS_dealloc           },

@@ -327,3 +327,14 @@ class TestAnalogy(TestCase):
         self.assertEqual(
             repr(p), r"reqjs.Pattern('\\w{2}', reqjs.IGNORECASE|reqjs.STICKY)"
         )
+
+    def test_match_repr(self):
+        p = re.compile("hi")
+        m = p.search(" hi ")
+        self.assertEqual(repr(m), "<re.Match object; span=(1, 3), match='hi'>")
+
+        p = reqjs.compile("hi")
+        m = p.search(" hi ")
+        self.assertEqual(
+            repr(m), "<reqjs.Match object; span=(1, 3), match='hi'>"
+        )
