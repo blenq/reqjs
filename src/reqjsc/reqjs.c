@@ -804,15 +804,18 @@ static PyObject *
 match_repr(ReQJSMatch *self)
 {
     PyObject *result;
-    int *span = self->spans[0];
-    PyObject *group0 = _match_group_from_span(self, span, Py_None);
-    if (group0 == NULL) {
+    PyObject *match_str;
+    int *span;
+
+    span = self->spans[0];
+    match_str = _match_group_from_span(self, span, Py_None);
+    if (match_str == NULL) {
         return NULL;
     }
-    result = PyUnicode_FromFormat("<%s object; span=(%zd, %zd), match=%.50R>",
+    result = PyUnicode_FromFormat("<%s object; span=(%d, %d), match=%.50R>",
                                   Py_TYPE(self)->tp_name, span[0], span[1],
-                                  group0);
-    Py_DECREF(group0);
+                                  match_str);
+    Py_DECREF(match_str);
     return result;
 }
 
