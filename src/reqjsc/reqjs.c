@@ -13,9 +13,9 @@
 #define Py_READONLY    READONLY
 #endif /* PY_VERSION_HEX < 0x030C0000 */
 
-/* Include quickjs regular expression lib (libregexp) */
-#include "cutils.h" /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
-#include "libregexp.h"
+/* Include quickjs-ng regular expression lib (libregexp) */
+#include "cutils.h"    /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
+#include "libregexp.h" /* regexp functionality */
 
 #define FLAG_ASCII      (1 << 29)
 #define FLAG_STICKY_END (1 << 30)
@@ -97,7 +97,6 @@ typedef struct {
     PyObject *string;       // The python string being matched
     PyObject *utf16_bytes;  // The python bytes object containing UTF-16 data
     uint8_t *string_data;   // The buffer that is exposed to libregexp
-    int string_type;        // The type of string
     int pos;                // The character position where searching starts
     int endpos;             // The character position where searching ends
     int adjustment;         // The code point adjustment for UCS4 data
@@ -106,17 +105,24 @@ typedef struct {
 } ReQJSMatch;
 
 
+static inline ReQJSPattern *
+_match_pattern(ReQJSMatch *self)
+{
+    return (ReQJSPattern *)self->re;
+}
+
+
 static inline PyObject *
 _match_groupindex(ReQJSMatch *self)
 {
-    return ((ReQJSPattern *)self->re)->groupindex;
+    return _match_pattern(self)->groupindex;
 }
 
 
 static inline int
 _match_flags(ReQJSMatch *self)
 {
-    return ((ReQJSPattern *)self->re)->flags;
+    return _match_pattern(self)->flags;
 }
 
 
@@ -125,7 +131,7 @@ _match_alloc_capture(ReQJSMatch *self)
 {
     int alloc_count;
 
-    alloc_count = lre_get_alloc_count(((ReQJSPattern *)self->re)->byte_code);
+    alloc_count = lre_get_alloc_count(_match_pattern(self)->byte_code);
     if (alloc_count > 0) {
         uint8_t **capture;
 
@@ -142,9 +148,9 @@ _match_alloc_capture(ReQJSMatch *self)
 static inline int
 _match_lre_exec(ReQJSMatch *self, uint8_t **capture)
 {
-    int buf_type = self->string_type != PyUnicode_1BYTE_KIND;
+    int buf_type = PyUnicode_KIND(self->string) != PyUnicode_1BYTE_KIND;
 
-    return lre_exec(capture, ((ReQJSPattern *)self->re)->byte_code,
+    return lre_exec(capture, _match_pattern(self)->byte_code,
                     self->string_data, self->pos + self->adjustment,
                     self->unit_endpos, buf_type, NULL);
 }
@@ -444,10 +450,9 @@ _match_init_from_args(ReQJSPattern *pattern,
         return 0;
     }
     match->re = Py_NewRef((PyObject *)pattern);
-    match->string_type = PyUnicode_KIND(match->string);
     match->pos = (int)pos;
     match->endpos = (int)endpos;
-    if (match->string_type == PyUnicode_4BYTE_KIND) {
+    if (PyUnicode_KIND(match->string) == PyUnicode_4BYTE_KIND) {
         /*  Data consists of a 4 bytes character array. libregexp needs UTF-16
             data and indices that point to the code unit (uint16 array index).
             The indices must be adjusted for surrogate pairs which take up two
@@ -534,13 +539,13 @@ _match_adjust_spans(ReQJSMatch *match)
     /* Convert code unit indices to code point indices */
     int match_size;
     int i;
-    int point_idx;
+    int curr_point_idx;
     int *span;
     int *prev_span;
     Py_UCS4 *py_data;
 
     match_size = (int)Py_SIZE(match);
-    point_idx = match->pos;  // current code point (character) index
+    curr_point_idx = match->pos;  // current code point (character) index
     prev_span = NULL;
     py_data = PyUnicode_4BYTE_DATA(match->string);
 
@@ -553,21 +558,24 @@ _match_adjust_spans(ReQJSMatch *match)
         }
         if (prev_span && (prev_span[1] <= span[0])) {
             // Adjust previous group end if it precedes current start
-            point_idx = prev_span[1] =
-                unit_to_point_idx(match, py_data, point_idx, prev_span[1]);
+            curr_point_idx = prev_span[1] = unit_to_point_idx(
+                match, py_data, curr_point_idx, prev_span[1]);
         }
         // Adjust current group start
-        point_idx = span[0] =
-            unit_to_point_idx(match, py_data, point_idx, span[0]);
+        curr_point_idx = span[0] =
+            unit_to_point_idx(match, py_data, curr_point_idx, span[0]);
         prev_span = span;
     }
 
     // Loop through groups in reverse order and adjust applicable group ends
     for (i -= 1; i >= 0; i--) {
+        int span_end;
+
         span = match->spans[i];
-        if (span[1] > point_idx) {
-            point_idx = span[1] =
-                unit_to_point_idx(match, py_data, point_idx, span[1]);
+        span_end = span[1];
+        if (span_end > curr_point_idx) {
+            curr_point_idx = span[1] =
+                unit_to_point_idx(match, py_data, curr_point_idx, span_end);
         }
     }
 }
@@ -595,12 +603,13 @@ _match_exec(ReQJSMatch *match)
     if (result == 1) {
         /* Pattern matches */
         int match_size;
-        int shift;
 
         match_size = (int)Py_SIZE(match);
-        shift = match->string_type != PyUnicode_1BYTE_KIND;
         if (match_size) {
             // Fill group indices
+            int shift;
+
+            shift = PyUnicode_KIND(match->string) != PyUnicode_1BYTE_KIND;
             for (int i = 0; i < match_size; i++) {
                 uint8_t **ptr_span;
                 int *span;
@@ -629,7 +638,7 @@ _match_exec(ReQJSMatch *match)
                 && match->spans[0][1] != match->unit_endpos) {
                 result = 0;
             }
-            else if (match->string_type == PyUnicode_4BYTE_KIND) {
+            else if (PyUnicode_KIND(match->string) == PyUnicode_4BYTE_KIND) {
                 /* libregexp reports code UNIT indices. We need code POINT
                    indices. For non-BMP strings these are not the same, and
                    must be adjusted. */
@@ -680,10 +689,18 @@ ReQJSMatch_next(ReQJSMatch *self,
     ReQJSMatch *match;
     PyObject *result;
     int *span;
+    int empty;
 
     if (PyVectorcall_NARGS(nargs) != 0) {
         PyErr_SetString(PyExc_ValueError, "Unexpected argument");
         return NULL;
+    }
+
+    span = self->spans[0];
+    empty = span[0] == span[1];
+    if (empty && span[1] == self->endpos) {
+        // empty match at end
+        Py_RETURN_NONE;
     }
 
     // Create new Match
@@ -697,28 +714,20 @@ ReQJSMatch_next(ReQJSMatch *self,
     match->string = Py_NewRef(self->string);
     match->utf16_bytes = Py_XNewRef(self->utf16_bytes);
     match->string_data = self->string_data;
-    match->string_type = self->string_type;
     match->adjustment = self->adjustment;
     match->endpos = self->endpos;
     match->unit_endpos = self->unit_endpos;
 
     // Set start position to end of current Match
-    span = self->spans[0];
     match->pos = span[1];
 
     // Increment start if current Match is empty to prevent infinite loop
-    if (span[0] == span[1]) {
+    if (empty) {
+        if (PyUnicode_KIND(match->string) == PyUnicode_4BYTE_KIND
+            && PyUnicode_4BYTE_DATA(match->string)[match->pos] > UINT16_MAX) {
+            match->adjustment += 1;
+        }
         match->pos += 1;
-        if (match->pos > match->endpos) {
-            Py_DECREF(match);
-            Py_RETURN_NONE;
-        }
-        if (match->string_type == PyUnicode_4BYTE_KIND) {
-            Py_UCS4 *py_data = PyUnicode_4BYTE_DATA(match->string);
-            if (py_data[match->pos - 1] > UINT16_MAX) {
-                match->adjustment += 1;
-            }
-        }
     }
 
     // And execute the new Match
