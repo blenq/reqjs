@@ -119,23 +119,22 @@ class PatternCase(TestCase):
         self.assertEqual(res, ["hi", "ho"])
 
     def test_pattern_match(self) -> None:
-        p = reqjs.Pattern("hi")
-        m = p.match("hello")
+        p = reqjs.Pattern("hi", reqjs.STICKY)
+        m = p.search("hello")
         self.assertIsNone(m)
-        m = p.match("hello hi hello")
+        m = p.search("hello hi hello")
         self.assertIsNone(m)
-        m = p.match("hello hi hello", 6)
+        m = p.search("hello hi hello", 6)
         self.assertIsNotNone(m)
 
     def test_match(self) -> None:
-        m = reqjs.match("hi", "hello")
+        m = reqjs.search("hi", "hello", reqjs.STICKY)
         self.assertIsNone(m)
-        m = reqjs.match("hi", "hello hi hello")
+        m = reqjs.search("hi", "hello hi hello", reqjs.STICKY)
         self.assertIsNone(m)
-        m = reqjs.match("hi", "hi there")
+        m = reqjs.search("hi", "hi there", reqjs.STICKY)
         self.assertIsNotNone(m)
         assert m is not None
-        self.assertIn(reqjs.STICKY, m.re.flags)
 
     def test_pattern_groups(self) -> None:
         p = reqjs.Pattern("hi (hello(\\d+)) (wow) ")
@@ -273,17 +272,31 @@ class PatternCase(TestCase):
         self.assertIs(reqjs.test("hi", " hello "), False)
 
     def test_pattern_fullmatch(self):
-        p = reqjs.Pattern(r"\w{2}")
-        self.assertIsNone(p.fullmatch(" hi "))
-        self.assertIsNone(p.fullmatch("hi "))
-        self.assertIsInstance(p.fullmatch("hi"), reqjs.Match)
+        p = reqjs.Pattern(r"\w{2}", reqjs.STICKY | reqjs.STICKY_END)
+        self.assertIsNone(p.search(" hi "))
+        self.assertIsNone(p.search("hi "))
+        self.assertIsInstance(p.search("hi"), reqjs.Match)
 
     def test_fullmatch(self):
-        self.assertIsNone(reqjs.fullmatch(r"\w{2}", " hi "))
-        self.assertIsNone(reqjs.fullmatch(r"\w{2}", "hi "))
-        m = reqjs.fullmatch(r"\w{2}", "hi")
+        self.assertIsNone(
+            reqjs.search(r"\w{2}", " hi ", reqjs.STICKY | reqjs.STICKY_END)
+        )
+        self.assertIsNone(
+            reqjs.search(r"\w{2}", "hi ", reqjs.STICKY | reqjs.STICKY_END)
+        )
+        m = reqjs.search(r"\w{2}", "hi", reqjs.STICKY | reqjs.STICKY_END)
         self.assertIsInstance(m, reqjs.Match)
-        self.assertIs(m.re.flags, reqjs.UNICODE | reqjs.STICKY)
+        self.assertIs(m.re.flags, reqjs.STICKY_END | reqjs.STICKY)
+
+        self.assertFalse(
+            reqjs.test(r"\w{2}", " hi ", reqjs.STICKY | reqjs.STICKY_END)
+        )
+        self.assertFalse(
+            reqjs.search(r"\w{2}", "hi ", reqjs.STICKY | reqjs.STICKY_END)
+        )
+        self.assertTrue(
+            reqjs.search(r"\w{2}", "hi", reqjs.STICKY | reqjs.STICKY_END)
+        )
 
     def test_invalid_flags(self):
         reqjs.Pattern(r"\w{2}")

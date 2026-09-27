@@ -17,6 +17,8 @@
 #include "cutils.h" /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
 #include "libregexp.h"
 
+#define FLAG_STICKY_END (1 << 30)
+
 
 /* Implementations needed by libregexp */
 
@@ -67,6 +69,7 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     uint8_t *byte_code;
+    int flags;
     PyObject *pattern;
     PyObject *groupindex;
 } ReQJSPattern;
@@ -76,13 +79,6 @@ static inline int
 _pattern_capture_count(ReQJSPattern *self)
 {
     return lre_get_capture_count(self->byte_code);
-}
-
-
-static inline int
-_pattern_flags(ReQJSPattern *self)
-{
-    return lre_get_flags(self->byte_code);
 }
 
 
@@ -113,6 +109,13 @@ static inline PyObject *
 _match_groupindex(ReQJSMatch *self)
 {
     return ((ReQJSPattern *)self->re)->groupindex;
+}
+
+
+static inline int
+_match_flags(ReQJSMatch *self)
+{
+    return ((ReQJSPattern *)self->re)->flags;
 }
 
 
@@ -621,7 +624,11 @@ _match_exec(ReQJSMatch *match)
                 }
             }
 
-            if (match->string_type == PyUnicode_4BYTE_KIND) {
+            if ((_match_flags(match) & FLAG_STICKY_END)
+                && match->spans[0][1] != match->unit_endpos) {
+                result = 0;
+            }
+            else if (match->string_type == PyUnicode_4BYTE_KIND) {
                 /* libregexp reports code UNIT indices. We need code POINT
                    indices. For non-BMP strings these are not the same, and
                    must be adjusted. */
@@ -1025,6 +1032,7 @@ ReQJSPattern_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
     }
 
     pattern->pattern = Py_NewRef(pattern_str);
+    pattern->flags = flags;
 
     // Compile pattern
     int byte_code_len;
@@ -1085,7 +1093,10 @@ ReQJSPattern_test(ReQJSPattern *self,
     ReQJSMatch *match;
     int result;
 
-    match = _match_new(defining_class, 0);
+    Py_ssize_t match_size;
+
+    match_size = self->flags & FLAG_STICKY_END ? 1 : 0;
+    match = _match_new(defining_class, match_size);
     if (match == NULL) {
         return NULL;
     }
@@ -1139,7 +1150,7 @@ ReQJSPattern_search(ReQJSPattern *self,
 static PyObject *
 ReQJSPattern_flags(ReQJSPattern *self, void *unused)
 {
-    return PyLong_FromLong(_pattern_flags(self));
+    return PyLong_FromLong(self->flags | lre_get_flags(self->byte_code));
 }
 
 
@@ -1207,7 +1218,7 @@ ReQJSPattern_richcompare(ReQJSPattern *self, PyObject *other_obj, int op)
     }
     other = (ReQJSPattern *)other_obj;
 
-    cmp = _pattern_flags(self) == _pattern_flags(other);
+    cmp = self->flags == other->flags;
 
     if (cmp) {
 #if PY_VERSION_HEX < 0x030E0000
@@ -1238,7 +1249,7 @@ ReQJSPattern_hash(ReQJSPattern *self)
     if (hash == -1) {
         return -1;
     }
-    hash ^= (Py_hash_t)_pattern_flags(self);
+    hash ^= (Py_hash_t)self->flags;
     if (hash == -1) {
         hash = -2;
     }
@@ -1346,6 +1357,9 @@ reqjs_mod_exec(PyObject *m)
     }
     if (PyModule_AddIntConstant(m, "UNICODE_SETS", LRE_FLAG_UNICODE_SETS)
         < 0) {
+        return -1;
+    }
+    if (PyModule_AddIntConstant(m, "STICKY_END", FLAG_STICKY_END) < 0) {
         return -1;
     }
     return 0;

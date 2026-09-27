@@ -26,7 +26,6 @@ from ._reqjs import Match, PatternError
 __all__ = [
     "compile",
     "finditer",
-    "match",
     "search",
     "Match",
     "Pattern",
@@ -46,6 +45,7 @@ __all__ = [
     "NAMED_GROUPS",
     "V",
     "UNICODE_SETS",
+    "STICKY_END",
 ]
 
 
@@ -66,6 +66,7 @@ class RegexFlag(enum.IntFlag):
     STICKY = Y = _reqjs.STICKY
     NAMED_GROUPS = _reqjs.NAMED_GROUPS
     UNICODE_SETS = V = _reqjs.UNICODE_SETS
+    STICKY_END = _reqjs.STICKY_END
 
     if sys.version_info < (3, 11):
         # global_enum in 3.11 will do something similar
@@ -107,6 +108,7 @@ if TYPE_CHECKING:
     NAMED_GROUPS = RegexFlag.NAMED_GROUPS
     V = RegexFlag.V
     UNICODE_SETS = RegexFlag.UNICODE_SETS
+    STICKY_END = RegexFlag.STICKY_END
 
 
 if sys.version_info < (3, 11):
@@ -192,34 +194,6 @@ class Pattern(_reqjs.Pattern):
     def flags(self) -> RegexFlag:  # pyright: ignore[reportIncompatibleMethodOverride]
         """The options flags of the :class:`Pattern`"""
         return RegexFlag(super().flags)
-
-    def prefixmatch(
-        self,
-        string: str,
-        pos: int = 0,
-        endpos: int = sys.maxsize,
-    ) -> Match | None:
-        match_obj = super().search(string, pos, endpos)
-        if match_obj is None or match_obj.start() != match_obj.pos:
-            return None
-        return match_obj
-
-    def fullmatch(
-        self,
-        string: str,
-        pos: int = 0,
-        endpos: int = sys.maxsize,
-    ) -> Match | None:
-        match_obj = super().search(string, pos, endpos)
-        if (
-            match_obj is None
-            or match_obj.start() != match_obj.pos
-            or match_obj.end() != match_obj.endpos
-        ):
-            return None
-        return match_obj
-
-    match = prefixmatch
 
     def search(
         self,
@@ -399,51 +373,6 @@ def finditer(
     return Pattern(pattern, flags).finditer(string)
 
 
-def prefixmatch(
-    pattern: str,
-    string: str,
-    flags: _FlagsType = UNICODE | STICKY,
-) -> Match | None:
-    """Searches for a pattern at the beginning of a string
-
-    The :py:attr:`STICKY` flag will always be set, to make the search more
-    efficient,
-
-    :param pattern: The regular expression pattern
-    :param string: The string to search in
-    :param flags: The options of the regular expression
-    :return: A :py:class:`Match` object if the pattern is found at the
-        beginning of the string, or :py:data:`None` otherwise.
-    :rtype: :py:class:`Match` | :py:data:`None`
-
-    """
-    flags = STICKY | flags  # noqa: F821
-    return Pattern(pattern, flags).search(string)
-
-
-def fullmatch(
-    pattern: str,
-    string: str,
-    flags: _FlagsType = UNICODE | STICKY,
-) -> Match | None:
-    """Return a :py:class:`Match` object if the *whole* string matches the
-    pattern.
-
-    The :py:attr:`STICKY` flag will always be set, to make the search more
-    efficient,
-
-    :param pattern: The regular expression pattern
-    :param string: The string to search in
-    :param flags: The options of the regular expression
-    :return: A :py:class:`Match` object if the *whole* string matches, or
-        :py:data:`None` otherwise.
-    :rtype: :py:class:`Match` | :py:data:`None`
-
-    """
-    flags = STICKY | flags  # noqa: F821
-    return Pattern(pattern, flags).fullmatch(string)
-
-
 def findall(
     pattern: str,
     string: str,
@@ -476,14 +405,6 @@ def findall(
 
     """
     return Pattern(pattern, flags).findall(string)
-
-
-#:
-#:.. deprecated:: 0.1
-#:    Following Python 3.15, :py:func:`match` has been soft-deprecated in
-#:    favor of :py:func:`prefixmatch`, which is more explicitly descriptive.
-#:
-match = prefixmatch
 
 
 def split(
