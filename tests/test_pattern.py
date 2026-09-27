@@ -8,7 +8,7 @@ import reqjs
 class PatternCase(TestCase):
     def test_props(self) -> None:
         p = reqjs.Pattern("(hi)", reqjs.NAMED_GROUPS)
-        self.assertIs(p.flags, reqjs.NOFLAG)
+        self.assertIs(p.flags, reqjs.UNICODE)
         self.assertEqual(p.pattern, "(hi)")
         self.assertEqual(p.groups, 1)
         self.assertEqual(p.groupindex, {})
@@ -34,14 +34,14 @@ class PatternCase(TestCase):
 
     def test_not_equal_flags(self) -> None:
         p1 = reqjs.compile("hi")
-        p2 = reqjs.compile("hi", reqjs.RegexFlag.NOFLAG)
+        p2 = reqjs.compile("hi", reqjs.RegexFlag.ASCII)
         self.assertNotEqual(p1, p2)
 
     def test_flag(self) -> None:
         p = reqjs.compile("hi")
         self.assertIs(reqjs.RegexFlag(p.flags), reqjs.UNICODE)
         p = reqjs.compile("hi", reqjs.NAMED_GROUPS)
-        self.assertIs(reqjs.RegexFlag(p.flags), reqjs.NOFLAG)
+        self.assertIs(reqjs.RegexFlag(p.flags), reqjs.UNICODE)
 
     def test_match_attrs(self) -> None:
         p = reqjs.compile("hi")
@@ -286,7 +286,9 @@ class PatternCase(TestCase):
         )
         m = reqjs.search(r"\w{2}", "hi", reqjs.STICKY | reqjs.STICKY_END)
         self.assertIsInstance(m, reqjs.Match)
-        self.assertIs(m.re.flags, reqjs.STICKY_END | reqjs.STICKY)
+        self.assertIs(
+            m.re.flags, reqjs.UNICODE | reqjs.STICKY_END | reqjs.STICKY
+        )
 
         self.assertFalse(
             reqjs.test(r"\w{2}", " hi ", reqjs.STICKY | reqjs.STICKY_END)
@@ -338,7 +340,8 @@ class TestAnalogy(TestCase):
 
         p = reqjs.compile("\\w{2}", reqjs.STICKY | reqjs.IGNORECASE)
         self.assertEqual(
-            repr(p), r"reqjs.Pattern('\\w{2}', reqjs.IGNORECASE|reqjs.STICKY)"
+            repr(p),
+            r"reqjs.Pattern('\\w{2}', reqjs.IGNORECASE|reqjs.UNICODE|reqjs.STICKY)",
         )
 
     def test_match_repr(self):

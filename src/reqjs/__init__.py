@@ -31,6 +31,8 @@ __all__ = [
     "Pattern",
     "PatternError",
     "RegexFlag",
+    "ASCII",
+    "A",
     "NOFLAG",
     "I",
     "IGNORECASE",
@@ -66,6 +68,7 @@ class RegexFlag(enum.IntFlag):
     STICKY = Y = _reqjs.STICKY
     NAMED_GROUPS = _reqjs.NAMED_GROUPS
     UNICODE_SETS = V = _reqjs.UNICODE_SETS
+    ASCII = A = _reqjs.ASCII
     STICKY_END = _reqjs.STICKY_END
 
     if sys.version_info < (3, 11):
@@ -108,6 +111,8 @@ if TYPE_CHECKING:
     NAMED_GROUPS = RegexFlag.NAMED_GROUPS
     V = RegexFlag.V
     UNICODE_SETS = RegexFlag.UNICODE_SETS
+    A = RegexFlag.A
+    ASCII = RegexFlag.ASCII
     STICKY_END = RegexFlag.STICKY_END
 
 
@@ -151,7 +156,7 @@ class Pattern(_reqjs.Pattern):
     _MAXCACHE = 512
     _MAXCACHE2 = 256
 
-    def __new__(cls, pattern: str, flags: _FlagsType = UNICODE) -> "Self":
+    def __new__(cls, pattern: str, flags: _FlagsType = NOFLAG) -> "Self":
         """Returns a compiled regular expression pattern"""
 
         # This caching mechanism is implemented with (slightly modified) code,
@@ -322,7 +327,7 @@ compile = Pattern
 def search(
     pattern: str,
     string: str,
-    flags: _FlagsType = UNICODE,
+    flags: _FlagsType = NOFLAG,
 ) -> Match | None:
     """Searches for a pattern in a string
 
@@ -340,7 +345,7 @@ def search(
 def test(
     pattern: str,
     string: str,
-    flags: _FlagsType = UNICODE,  # noqa: F821
+    flags: _FlagsType = NOFLAG,  # noqa: F821
 ) -> bool:
     """Checks if a pattern is found in a string
 
@@ -360,7 +365,7 @@ def test(
 
 
 def finditer(
-    pattern: str, string: str, flags: _FlagsType = UNICODE
+    pattern: str, string: str, flags: _FlagsType = NOFLAG
 ) -> Iterator[Match]:
     """A generator that yields non-overlapping matches
 
@@ -376,7 +381,7 @@ def finditer(
 def findall(
     pattern: str,
     string: str,
-    flags: _FlagsType = UNICODE,
+    flags: _FlagsType = NOFLAG,
 ) -> list[str | tuple[str, ...]]:
     """
     Return all non-overlapping matches of *pattern* in *string*, as a list of
@@ -412,7 +417,7 @@ def split(
     string: str,
     *,
     maxsplit: int = 0,
-    flags: _FlagsType = UNICODE,
+    flags: _FlagsType = NOFLAG,
 ) -> list[str | MaybeNone]:
     """Split *string* by the occurrences of *pattern*.
 
@@ -459,7 +464,7 @@ def sub(
     string: str,
     *,
     count: int = 0,
-    flags: _FlagsType = UNICODE,
+    flags: _FlagsType = NOFLAG,
 ) -> str:
     return Pattern(pattern, flags).sub(repl, string, count)
 

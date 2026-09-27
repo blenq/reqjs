@@ -17,6 +17,7 @@
 #include "cutils.h" /* utf8_encode, get_hi_surrogate, get_lo_surrogate */
 #include "libregexp.h"
 
+#define FLAG_ASCII      (1 << 29)
 #define FLAG_STICKY_END (1 << 30)
 
 
@@ -996,6 +997,11 @@ ReQJSPattern_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
+    // Set UNICODE flag unless ASCII or UNICODE_SETS has been set explicitly
+    if (!(flags & (FLAG_ASCII | LRE_FLAG_UNICODE_SETS))) {
+        flags |= LRE_FLAG_UNICODE;
+    }
+
     /* Peculiarity of libregexp:
 
     The pattern to compile must be encoded as a zero terminated UTF-8 string,
@@ -1009,7 +1015,6 @@ ReQJSPattern_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
     if (PyUnicode_KIND(pattern_str) == PyUnicode_4BYTE_KIND
         && !(flags & (LRE_FLAG_UNICODE | LRE_FLAG_UNICODE_SETS))) {
         // The peculiar case
-
         tmp_buf = cesu8_encode(pattern_str, &buf_len);
         if (tmp_buf == NULL) {
             return NULL;
@@ -1092,9 +1097,12 @@ ReQJSPattern_test(ReQJSPattern *self,
 {
     ReQJSMatch *match;
     int result;
-
     Py_ssize_t match_size;
 
+    // To only check if a string matches, no indices are needed, so size can
+    // be zero, unless a check for a sticky end is requested, in which case
+    // it needs the indices of group zero, the full match, only (size = 1),
+    // but not all the captured groups.
     match_size = self->flags & FLAG_STICKY_END ? 1 : 0;
     match = _match_new(defining_class, match_size);
     if (match == NULL) {
@@ -1357,6 +1365,9 @@ reqjs_mod_exec(PyObject *m)
     }
     if (PyModule_AddIntConstant(m, "UNICODE_SETS", LRE_FLAG_UNICODE_SETS)
         < 0) {
+        return -1;
+    }
+    if (PyModule_AddIntConstant(m, "ASCII", FLAG_ASCII) < 0) {
         return -1;
     }
     if (PyModule_AddIntConstant(m, "STICKY_END", FLAG_STICKY_END) < 0) {

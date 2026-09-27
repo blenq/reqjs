@@ -65,7 +65,7 @@ class TestOutsideBMP(TestCase):
         self.assertEqual(res, ["𐐷h", "𐐷h"])
 
     def test_no_unicode_flag(self) -> None:
-        p = reqjs.compile("hé(?<g𐐷>€l)𐐷lo", reqjs.NOFLAG)
+        p = reqjs.compile("hé(?<g𐐷>€l)𐐷lo", reqjs.ASCII)
         m = p.search("hi 𐐷 hé€l𐐷lo hi")
         self.assertIsNotNone(m)
         self.assertEqual(m.group(), "hé€l𐐷lo")

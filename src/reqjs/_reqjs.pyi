@@ -57,4 +57,5 @@ UNICODE: int
 STICKY: int
 NAMED_GROUPS: int
 UNICODE_SETS: int
+ASCII: int
 STICKY_END: int
