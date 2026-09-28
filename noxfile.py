@@ -52,4 +52,13 @@ def clang_format(session: nox.Session):
 @nox.session(python=py_versions)
 def unittest(session: nox.Session):
     session.install("coverage")
-    session.run("uv", "run", "--no-dev", "coverage", "run", "-m", "unittest")
+    session.run(
+        "uv",
+        "run",
+        "--no-dev",
+        "coverage",
+        "run",
+        "--parallel-mode",
+        "-m",
+        "unittest",
+    )
