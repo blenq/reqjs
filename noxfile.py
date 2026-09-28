@@ -6,6 +6,7 @@ py_versions = nox.project.python_versions(proj_toml)
 nox.options.default_venv_backend = "uv"
 nox.options.reuse_venv = "yes"
 nox.options.allow_parallel = True
+nox.options.parallel = "auto"
 
 
 @nox.session(python=py_versions)

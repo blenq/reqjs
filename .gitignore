@@ -8,7 +8,7 @@ wheels/
 .nox/
 wheelhouse/
 *.egg-info
-*.coverage
+*.coverage*
 *.pyd
 *.so
 
