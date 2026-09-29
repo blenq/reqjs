@@ -6,19 +6,10 @@ from operator import index
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Type,
     TypeAlias,
     TypeVar,
 )
-
-if TYPE_CHECKING:
-    # Prevent runtime dependency on typing_extensions
-    if sys.version_info < (3, 11):
-        from typing_extensions import Self
-    else:
-        from typing import Self
-
 
 from . import _reqjs
 from ._reqjs import Match, PatternError
@@ -92,7 +83,7 @@ class RegexFlag(enum.IntFlag):
                     break
             else:
                 # numeric value left
-                vals.append(format(val, "#x"))
+                vals.append(str(val.value))
             return "|".join(vals)
 
 
@@ -140,6 +131,12 @@ T = TypeVar("T")
 _FlagsType = int | RegexFlag
 
 
+_cache: dict[tuple[Type["Pattern"], str, int], "Pattern"] = {}  # LRU
+_cache2: dict[tuple[Type["Pattern"], str, int], "Pattern"] = {}  # FIFO
+_MAXCACHE = 512
+_MAXCACHE2 = 256
+
+
 class Pattern(_reqjs.Pattern):
     """A compiled regular expression.
 
@@ -151,12 +148,7 @@ class Pattern(_reqjs.Pattern):
 
     """
 
-    _cache: ClassVar[dict[tuple[Type["Self"], str, int], "Self"]] = {}  # LRU
-    _cache2: ClassVar[dict[tuple[Type["Self"], str, int], "Self"]] = {}  # FIFO
-    _MAXCACHE = 512
-    _MAXCACHE2 = 256
-
-    def __new__(cls, pattern: str, flags: _FlagsType = NOFLAG) -> "Self":
+    def __new__(cls, pattern: str, flags: _FlagsType = NOFLAG) -> "Pattern":
         """Returns a compiled regular expression pattern"""
 
         # This caching mechanism is implemented with (slightly modified) code,
@@ -167,36 +159,40 @@ class Pattern(_reqjs.Pattern):
         key = (cls, pattern, flags)
         try:
             # First try the FIFO cache
-            return cls._cache2[key]
+            return _cache2[key]
         except KeyError:
             pass
 
         # Proceed with LRU cache, item should be moved to the end if found.
-        p = cls._cache.pop(key, None)
+        p = _cache.pop(key, None)
         if p is None:
             p = super().__new__(cls, pattern, flags)
-            if len(cls._cache) >= cls._MAXCACHE:
+            if len(_cache) >= _MAXCACHE:
                 # Drop the least recently used item.
                 try:
-                    del cls._cache[next(iter(cls._cache))]
-                except (StopIteration, RuntimeError, KeyError):
+                    del _cache[next(iter(_cache))]
+                except (
+                    StopIteration,
+                    RuntimeError,
+                    KeyError,
+                ):  # pragma: no cover
                     pass
         # Append to the end.
-        cls._cache[key] = p
+        _cache[key] = p
 
         # Also add item to FIFO cache
-        if len(cls._cache2) >= cls._MAXCACHE2:
+        if len(_cache2) >= _MAXCACHE2:
             # Drop the oldest item.
             try:
-                del cls._cache2[next(iter(cls._cache2))]
-            except (StopIteration, RuntimeError, KeyError):
+                del _cache2[next(iter(_cache2))]
+            except (StopIteration, RuntimeError, KeyError):  # pragma: no cover
                 pass
-        cls._cache2[key] = p
+        _cache2[key] = p
 
         return p
 
     @cached_property
-    def flags(self) -> RegexFlag:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def flags(self) -> RegexFlag:
         """The options flags of the :class:`Pattern`"""
         return RegexFlag(self._flags)
 
@@ -305,11 +301,6 @@ class Pattern(_reqjs.Pattern):
         self, repl: str | Callable[[Match], str], string: str, count: int = 0
     ) -> str:
         return self.subn(repl, string, count)[0]
-
-    @classmethod
-    def _purge(cls) -> None:
-        cls._cache.clear()
-        cls._cache2.clear()
 
     def __repr__(self) -> str:
         return (
@@ -471,4 +462,5 @@ def sub(
 
 def purge() -> None:
     """Clear the regular expression caches"""
-    Pattern._purge()  # pyright: ignore[reportPrivateUsage]
+    _cache.clear()
+    _cache2.clear()

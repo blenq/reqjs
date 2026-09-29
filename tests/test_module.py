@@ -9,3 +9,7 @@ class ModuleCase(TestCase):
             repr(reqjs.IGNORECASE | reqjs.UNICODE),
             "reqjs.IGNORECASE|reqjs.UNICODE",
         )
+        self.assertEqual(
+            repr(reqjs.UNICODE | 1 << 16),
+            "reqjs.UNICODE|65536",
+        )

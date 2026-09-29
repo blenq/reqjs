@@ -268,7 +268,7 @@ class PatternCase(TestCase):
         self.assertEqual(p1, p3)  # but it is equal to p1
 
         # overflow cache
-        max_cache = reqjs.Pattern._MAXCACHE
+        max_cache = reqjs._MAXCACHE
         p1 = reqjs.Pattern("hi")
         for i in range(max_cache + 1):
             reqjs.Pattern(f"hi{i}")

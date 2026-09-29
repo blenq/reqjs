@@ -54,7 +54,7 @@ def clang_format(session: nox.Session):
 
 @nox.session(python=py_versions)
 def unittest(session: nox.Session):
-    session.install("coverage", "setuptools")
+    session.install("coverage[toml]", "setuptools")
     session.run_install("./setup.py", "build_ext", "--inplace")
     session.env["PYTHONPATH"] = str(Path(__file__).parent / "src")
     session.run("coverage", "run", "--parallel-mode", "-m", "unittest")
@@ -62,5 +62,5 @@ def unittest(session: nox.Session):
 
 @nox.session(python=py_versions[0], requires=["unittest"])
 def coverage_combine(session: nox.Session):
-    session.install("coverage")
+    session.install("coverage[toml]")
     session.run("coverage", "combine")

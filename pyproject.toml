@@ -59,7 +59,7 @@ cache-keys = [
 
 [dependency-groups]
 dev = [
-    "coverage>=7.15.0",
+    "coverage[toml]>=7.15.0",
     "mypy>=2.2.0",
     "nox>=2026.4.10",
     "pyright>=1.1.411",
@@ -94,3 +94,8 @@ include = ["./src"]
 
 [tool.cibuildwheel]
 test-command = "python -m unittest discover -s {project}"
+
+
+[tool.coverage.run]
+branch = true
+source = ["reqjs"]
