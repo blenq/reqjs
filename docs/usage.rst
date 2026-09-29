@@ -1,12 +1,16 @@
+:tocdepth: 3
+
 ReQJS usage
 ===========
 
 The `reqjs` module provides regular expression functionality, using the
-`QuickJS <https://bellard.org/quickjs/quickjs.html#RegExp>`_
-regular expression engine. It conforms to the ES2025 specification. It does
-only expose the regular expression engine, not the JavaScript RegExp object.
+`QuickJS-NG <https://quickjs-ng.github.io/quickjs/>`_
+regular expression engine, which conforms to the JavaScript ES2025
+specification.
+It does only expose the regular expression engine, not the JavaScript RegExp
+object.
 The Python interface, documented here, is inspired by the standard Python
-:py:mod:`re module<re>`, but it is not a drop-in replacement.
+:py:mod:`re module<re>`, but it is by no means a drop-in replacement.
 
 This documentation does not provide information about the ECMAScript
 Regex pattern format. This has been done extensively by others, for example
@@ -23,6 +27,16 @@ Flags
 
 Various flags can be set to adjust the matching algorithm of a pattern. The
 flags are implemented as an :py:class:`enum.IntFlag` class :py:class:`RegexFlag`.
+
+The libregexp engine defines two flags, GLOBAL and INDICES, which are not
+implemented here, because these flags do not influence the regexp engine
+itself. Those have only meaning for the higher level JavaScript RegExp object.
+
+.. note::
+
+    All functions and methods that accept a flags argument will set the
+    :py:data:`UNICODE` flag, unless the :py:data:`ASCII` or
+    :py:data:`UNICODE_SETS` flag is set.
 
 
 .. class:: RegexFlag
@@ -56,14 +70,28 @@ flags are implemented as an :py:class:`enum.IntFlag` class :py:class:`RegexFlag`
 .. py:data:: U
              UNICODE
 
-    Treat a pattern as a sequence of Unicode code points.
+    Enables Unicode functionality when matching. This flag will always be
+    enabled unless the :py:data:`ASCII` or :py:data:`UNICODE_SETS` flag is set.
+
+
+.. py:data:: ASCII
+
+    Prevents the :py:data:`UNICODE` flag from being set automatically. This
+    flag is not defined by libregexp, but by the :py:mod:`reqjs` module itself.
 
 
 .. py:data:: Y
              STICKY
 
-    Perform a "sticky" search that matches only at the current position and
+    Perform a "sticky" search that matches only at the given position and
     does not attempt to match behind that position.
+
+
+.. py:data:: STICKY_END
+
+    Perform a search that matches at the end, or at the given endpos, of
+    the string. This flag is not defined by libregexp, but by the
+    :py:mod:`reqjs` module itself.
 
 
 .. py:data:: NAMED_GROUPS
@@ -75,30 +103,33 @@ flags are implemented as an :py:class:`enum.IntFlag` class :py:class:`RegexFlag`
 .. py:data:: V
              UNICODE_SETS
 
-    An upgrade to the :py:data:`UNICODE` flag that that enables more Unicode-related
-    features.
+    An upgrade to the :py:data:`UNICODE` flag that that enables more
+    Unicode-related features.
 
 
 Functions
 ^^^^^^^^^
 
-.. autofunction:: compile
+.. note::
+
+    The functionality provided by :py:func:`re.match` can be emulated by
+    calling :py:func:`search` with the :py:data:`STICKY` flag.
+
+    Similarly, use :py:data:`STICKY` | :py:data:`STICKY_END` for
+    :py:func:`re.fullmatch` functionality.
+
 
 .. autofunction:: search
 
 .. autofunction:: test
-
-.. autofunction:: prefixmatch(pattern: str, string: str, flags: int = reqjs.UNICODE | reqjs.STICKY) -> Match | None:
-
-.. autofunction:: match
-
-.. autofunction:: fullmatch
 
 .. autofunction:: split
 
 .. autofunction:: findall
 
 .. autofunction:: finditer
+
+.. autofunction:: compile
 
 
 Regular Expression objects
@@ -123,5 +154,5 @@ Regular Expression objects
     :undoc-members:
     :exclude-members: start, end
 
-    .. automethod:: start(group: int | str = 0) -> int
-    .. automethod:: end(group: int | str = 0) -> int
+    .. automethod:: start(group: int | str = 0, /) -> int
+    .. automethod:: end(group: int | str = 0, /) -> int

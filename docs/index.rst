@@ -6,7 +6,9 @@
 ReQJS documentation
 ===================
 
-The ReQJS package exposes the QuickJS regular expression engine to Python.
+The ReQJS package exposes the QuickJS-NG JavaScript regular expression engine
+to Python.
+
 
 .. toctree::
    :maxdepth: 2
