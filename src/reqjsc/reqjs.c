@@ -1282,7 +1282,7 @@ static PyMemberDef ReQJSPattern_members[] = {
 
 
 static PyGetSetDef ReQJSPattern_getset[] = {
-    { "flags", (getter)ReQJSPattern_flags, NULL, NULL, NULL },
+    { "_flags", (getter)ReQJSPattern_flags, NULL, NULL, NULL },
     { "groups", (getter)ReQJSPattern_groups, NULL, NULL, NULL },
     { "groupindex", (getter)ReQJSPattern_groupindex, NULL, NULL, NULL },
     { NULL }
@@ -1314,7 +1314,7 @@ static PyType_Slot pattern_type_slots[] = {
 
 
 static PyType_Spec pattern_type_spec = {
-    .name = "reqjs.Pattern",
+    .name = "reqjs._reqjs.Pattern",
     .basicsize = sizeof(ReQJSPattern),
     .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE,
     .slots = pattern_type_slots,

@@ -198,7 +198,7 @@ class Pattern(_reqjs.Pattern):
     @cached_property
     def flags(self) -> RegexFlag:  # pyright: ignore[reportIncompatibleMethodOverride]
         """The options flags of the :class:`Pattern`"""
-        return RegexFlag(super().flags)
+        return RegexFlag(self._flags)
 
     def search(
         self,
