@@ -239,6 +239,23 @@ class PatternCase(TestCase):
         res = reqjs.sub("hi", "hello", "ok hi, wow hi")
         self.assertEqual(res, "ok hello, wow hello")
 
+        def twice(m: reqjs.Match) -> str:
+            return str(int(m.group()) * 2)
+
+        res = reqjs.sub(r"\d+", twice, "6 rabbits and 12 mice")
+        self.assertEqual(res, "12 rabbits and 24 mice")
+
+        def twice_wrong(m: reqjs.Match) -> str:
+            return int(m.group()) * 2
+
+        with self.assertRaises(TypeError) as exc_ctx:
+            reqjs.sub(r"\d+", twice_wrong, "I have 6 rabbits and 12 mice")
+
+        self.assertEqual(
+            exc_ctx.exception.args[0],
+            "sequence item 1: expected str instance, int found",
+        )
+
     def test_cache(self):
         p1 = reqjs.Pattern("hi")
         p2 = reqjs.Pattern("hi")
