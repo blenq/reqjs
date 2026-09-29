@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import nox
 
 proj_toml = nox.project.load_toml()
@@ -9,13 +11,13 @@ nox.options.allow_parallel = True
 nox.options.parallel = "auto"
 
 
-@nox.session(python=py_versions)
+@nox.session(py=py_versions)
 def mypy(session: nox.Session):
     session.install("mypy")
     session.run("mypy")
 
 
-@nox.session(python=py_versions)
+@nox.session(py=py_versions)
 def pyright(session: nox.Session):
     session.install("pyright")
     session.run("pyright")
@@ -52,14 +54,13 @@ def clang_format(session: nox.Session):
 
 @nox.session(python=py_versions)
 def unittest(session: nox.Session):
+    session.install("coverage", "setuptools")
+    session.run_install("./setup.py", "build_ext", "--inplace")
+    session.env["PYTHONPATH"] = str(Path(__file__).parent / "src")
+    session.run("coverage", "run", "--parallel-mode", "-m", "unittest")
+
+
+@nox.session(python=py_versions[0], requires=["unittest"])
+def coverage_combine(session: nox.Session):
     session.install("coverage")
-    session.run(
-        "uv",
-        "run",
-        "--no-dev",
-        "coverage",
-        "run",
-        "--parallel-mode",
-        "-m",
-        "unittest",
-    )
+    session.run("coverage", "combine")
