@@ -692,7 +692,7 @@ ReQJSMatch_next(ReQJSMatch *self,
     int empty;
 
     if (PyVectorcall_NARGS(nargs) != 0) {
-        PyErr_SetString(PyExc_ValueError, "Unexpected argument");
+        PyErr_SetString(PyExc_TypeError, "_next() got an unexpected argument");
         return NULL;
     }
 
@@ -1290,9 +1290,9 @@ static PyGetSetDef ReQJSPattern_getset[] = {
 
 
 static PyMethodDef ReQJSPattern_methods[] = {
-    { "search", (PyCFunction)ReQJSPattern_search,
+    { "_search", (PyCFunction)ReQJSPattern_search,
      METH_METHOD | METH_FASTCALL | METH_KEYWORDS, NULL },
-    { "test", (PyCFunction)ReQJSPattern_test,
+    { "_test", (PyCFunction)ReQJSPattern_test,
      METH_METHOD | METH_FASTCALL | METH_KEYWORDS, NULL },
     { NULL }
 };

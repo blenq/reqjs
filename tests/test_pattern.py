@@ -232,6 +232,8 @@ class PatternCase(TestCase):
         self.assertEqual(m.expand("s {2} s"), "s h s")
         self.assertEqual(m.expand("s {val} s"), "s h s")
         self.assertEqual(m.expand("s {non} s"), "s  s")
+        with self.assertRaises(TypeError):
+            m.expand(tmpl="hi")
 
     def test_sub(self) -> None:
         res = reqjs.sub("hi", "hello", "ok hi, wow hi")

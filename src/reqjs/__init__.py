@@ -206,7 +206,7 @@ class Pattern(_reqjs.Pattern):
         pos: int = 0,
         endpos: int = sys.maxsize,
     ) -> Match | None:
-        return super().search(string, pos, endpos)
+        return self._search(string, pos, endpos)
 
     def test(
         self,
@@ -225,13 +225,13 @@ class Pattern(_reqjs.Pattern):
         :rtype: bool
 
         """
-        return super().test(string, pos, endpos)
+        return self._test(string, pos, endpos)
 
     def finditer(
         self, string: str, pos: int = 0, endpos: int = sys.maxsize
     ) -> Iterator[Match]:
         """Yields matches"""
-        match_obj = super().search(string, pos, endpos)
+        match_obj = self._search(string, pos, endpos)
         while match_obj is not None:
             yield match_obj
             match_obj = match_obj._next()
