@@ -329,6 +329,14 @@ def search(
         :py:data:`None`.
     :rtype: :py:class:`Match` | :py:data:`None`
 
+    .. note::
+
+        The functionality provided by :py:func:`re.match` can be emulated by
+        calling :py:func:`search` with the :py:data:`STICKY` flag.
+
+        Similarly, use :py:data:`STICKY` | :py:data:`STICKY_END` for
+        :py:func:`re.fullmatch` functionality.
+
     """
     return Pattern(pattern, flags).search(string)
 

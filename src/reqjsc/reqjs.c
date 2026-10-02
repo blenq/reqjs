@@ -608,15 +608,14 @@ _match_exec(ReQJSMatch *match)
         if (match_size) {
             // Fill group indices
             int shift;
+            uint8_t **ptr_span;
 
+            ptr_span = capture;
             shift = PyUnicode_KIND(match->string) != PyUnicode_1BYTE_KIND;
             for (int i = 0; i < match_size; i++) {
-                uint8_t **ptr_span;
                 int *span;
 
-                ptr_span = capture + 2 * i;
                 span = match->spans[i];
-
                 if (ptr_span[0] && ptr_span[1]) {
                     /* Contributing group, calculate index using pointer
                        arithmetic and adjust byte index for 16 byte character
@@ -632,6 +631,7 @@ _match_exec(ReQJSMatch *match)
                     span[0] = -1;
                     span[1] = -1;
                 }
+                ptr_span += 2;
             }
 
             if ((_match_flags(match) & FLAG_STICKY_END)

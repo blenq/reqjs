@@ -110,15 +110,6 @@ itself. Those have only meaning for the higher level JavaScript RegExp object.
 Functions
 ^^^^^^^^^
 
-.. note::
-
-    The functionality provided by :py:func:`re.match` can be emulated by
-    calling :py:func:`search` with the :py:data:`STICKY` flag.
-
-    Similarly, use :py:data:`STICKY` | :py:data:`STICKY_END` for
-    :py:func:`re.fullmatch` functionality.
-
-
 .. autofunction:: search
 
 .. autofunction:: test
