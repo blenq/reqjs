@@ -253,19 +253,15 @@ class Pattern(_reqjs.Pattern):
         maxsplit: int,
         match_func: Callable[[Match], Iterator[T]],
     ) -> Generator[str | T, None, int]:
-        maxsplit = index(maxsplit)
-        if maxsplit < 0:
-            yield string
-            return 0
+        maxsplit = index(maxsplit) or len(string)
         prev_end = 0
         splits = 0
-        match_obj = self.search(string)
-        while match_obj is not None and (maxsplit == 0 or splits < maxsplit):
+        for splits, match_obj in enumerate(self.finditer(string)):
+            if splits >= maxsplit:
+                break
             yield string[prev_end : match_obj.start()]
             yield from match_func(match_obj)
             prev_end = match_obj.end()
-            splits += 1
-            match_obj = match_obj._next()
         yield string[prev_end:]
         return splits
 
@@ -276,9 +272,9 @@ class Pattern(_reqjs.Pattern):
 
         return list(self._split(string, maxsplit, yield_captured))
 
-    def subn(
+    def _subn(
         self, repl: str | Callable[[Match], str], string: str, count: int = 0
-    ) -> tuple[str, int]:
+    ) -> Generator[str, None, int]:
         if isinstance(repl, str):
 
             def yield_func(match_obj: Match) -> Iterator[str]:
@@ -288,19 +284,24 @@ class Pattern(_reqjs.Pattern):
             def yield_func(match_obj: Match) -> Iterator[str]:
                 yield repl(match_obj)
 
+        return self._split(string, count, yield_func)
+
+    def subn(
+        self, repl: str | Callable[[Match], str], string: str, count: int = 0
+    ) -> tuple[str, int]:
+
         subs_made = 0
 
         def yield_parts() -> Iterator[str]:
             nonlocal subs_made
-            subs_made = yield from self._split(string, count, yield_func)
+            subs_made = yield from self._subn(repl, string, count)
 
-        result = "".join(yield_parts())
-        return result, subs_made
+        return "".join(yield_parts()), subs_made
 
     def sub(
         self, repl: str | Callable[[Match], str], string: str, count: int = 0
     ) -> str:
-        return self.subn(repl, string, count)[0]
+        return "".join(self._subn(repl, string, count))
 
     def __repr__(self) -> str:
         return (
