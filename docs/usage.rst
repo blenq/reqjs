@@ -120,6 +120,8 @@ Functions
 
 .. autofunction:: finditer
 
+.. autofunction:: sub
+
 .. autofunction:: compile
 
 

@@ -225,7 +225,7 @@ class Pattern(_reqjs.Pattern):
 
     def finditer(
         self, string: str, pos: int = 0, endpos: int = sys.maxsize
-    ) -> Iterator[Match]:
+    ) -> Generator[Match, None, None]:
         """Yields matches"""
         match_obj = self._search(string, pos, endpos)
         while match_obj is not None:
@@ -365,14 +365,14 @@ def test(
 
 def finditer(
     pattern: str, string: str, flags: _FlagsType = NOFLAG
-) -> Iterator[Match]:
+) -> Generator[Match, None, None]:
     """A generator that yields non-overlapping matches
 
     :param pattern: The regular expression pattern
     :param string: The string to search in
     :param flags: The options of the regular expression
-    :return: An :py:class:`~collections.abc.Iterator` that yields :py:class:`Match` objects.
-    :rtype: :py:class:`~collections.abc.Iterator`\\[:py:class:`Match`]
+    :return: An :py:class:`~collections.abc.Generator` that yields
+        :py:class:`Match` objects.
     """
     return Pattern(pattern, flags).finditer(string)
 
@@ -465,6 +465,29 @@ def sub(
     count: int = 0,
     flags: _FlagsType = NOFLAG,
 ) -> str:
+    """Search for non-overlapping matches of *pattern* in *string* and
+    replace those using the replacement string or function. If no match is
+    found, the original string is returned.
+
+    :param pattern: The regular expression pattern
+    :param repl: The replacement string or function
+    :param string: The string to search in
+    :param count: The maximum number of occurrences to replace, zero means no
+        limit
+    :param flags: The options of the regular expression
+    :return: The *string* with applied substitutions
+
+    If *repl* is a string, it is interpreted as a format string and
+    :py:meth:`str.format` is called on it with all group values as *args* and
+    all named group values as *kwargs*. This means that literal curly braces
+    must be escaped by doubling: ``{{`` and ``}}``. When the replacement string
+    does not contain any replacement fields it will be returned as is, for each
+    match.
+
+    If *repl* is a function, it is called for every match. The function takes a
+    single :py:obj:`Match` argument, and returns the replacement string.
+
+    """
     return Pattern(pattern, flags).sub(repl, string, count)
 
 
