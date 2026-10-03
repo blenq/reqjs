@@ -130,18 +130,14 @@ static uint8_t **
 _match_alloc_capture(ReQJSMatch *self)
 {
     int alloc_count;
+    uint8_t **capture;
 
     alloc_count = lre_get_alloc_count(_match_pattern(self)->byte_code);
-    if (alloc_count > 0) {
-        uint8_t **capture;
-
-        capture = PyMem_RawMalloc(sizeof(capture[0]) * alloc_count);
-        if (capture == NULL) {
-            return (uint8_t **)PyErr_NoMemory();
-        }
-        return capture;
+    capture = PyMem_RawMalloc(sizeof(capture[0]) * alloc_count);
+    if (capture == NULL) {
+        PyErr_NoMemory();
     }
-    return NULL;
+    return capture;
 }
 
 
@@ -593,7 +589,7 @@ _match_exec(ReQJSMatch *match)
         return 0;
     }
     capture = _match_alloc_capture(match);
-    if (capture == NULL && PyErr_Occurred()) {
+    if (capture == NULL) {
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS;
