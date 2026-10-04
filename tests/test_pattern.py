@@ -256,6 +256,14 @@ class PatternCase(TestCase):
             "sequence item 1: expected str instance, int found",
         )
 
+        res = reqjs.sub(
+            "^# (.+)",
+            "<h1>{1}</h1>",
+            "# Title\ntext\n# Title 2",
+            flags=reqjs.MULTILINE,
+        )
+        self.assertEqual(res, "<h1>Title</h1>\ntext\n<h1>Title 2</h1>")
+
     def test_cache(self):
         p1 = reqjs.Pattern("hi")
         p2 = reqjs.Pattern("hi")

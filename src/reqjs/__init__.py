@@ -137,6 +137,15 @@ _MAXCACHE = 512
 _MAXCACHE2 = 256
 
 
+def _drop_if_full(cache: dict[Any, Any], max_cache: int) -> None:
+    if len(cache) >= max_cache:
+        # Drop the least recently used item.
+        try:
+            del cache[next(iter(cache))]
+        except (StopIteration, RuntimeError, KeyError):  # pragma: no cover
+            pass
+
+
 class Pattern(_reqjs.Pattern):
     """A compiled regular expression.
 
@@ -167,27 +176,10 @@ class Pattern(_reqjs.Pattern):
         p = _cache.pop(key, None)
         if p is None:
             p = super().__new__(cls, pattern, flags)
-            if len(_cache) >= _MAXCACHE:
-                # Drop the least recently used item.
-                try:
-                    del _cache[next(iter(_cache))]
-                except (
-                    StopIteration,
-                    RuntimeError,
-                    KeyError,
-                ):  # pragma: no cover
-                    pass
-        # Append to the end.
-        _cache[key] = p
+            _drop_if_full(_cache, _MAXCACHE)
 
-        # Also add item to FIFO cache
-        if len(_cache2) >= _MAXCACHE2:
-            # Drop the oldest item.
-            try:
-                del _cache2[next(iter(_cache2))]
-            except (StopIteration, RuntimeError, KeyError):  # pragma: no cover
-                pass
-        _cache2[key] = p
+        _drop_if_full(_cache2, _MAXCACHE2)
+        _cache[key] = _cache2[key] = p
 
         return p
 
@@ -253,11 +245,11 @@ class Pattern(_reqjs.Pattern):
         maxsplit: int,
         match_func: Callable[[Match], Iterator[T]],
     ) -> Generator[str | T, None, int]:
-        maxsplit = index(maxsplit) or len(string)
+        maxsplit = index(maxsplit)
         prev_end = 0
         splits = 0
         for splits, match_obj in enumerate(self.finditer(string)):
-            if splits >= maxsplit:
+            if maxsplit and splits >= maxsplit:
                 break
             yield string[prev_end : match_obj.start()]
             yield from match_func(match_obj)
@@ -328,7 +320,6 @@ def search(
     :param flags: The options of the regular expression
     :return: A :py:class:`Match` object if the pattern is found, otherwise
         :py:data:`None`.
-    :rtype: :py:class:`Match` | :py:data:`None`
 
     .. note::
 
@@ -347,14 +338,13 @@ def test(
     string: str,
     flags: _FlagsType = NOFLAG,  # noqa: F821
 ) -> bool:
-    """Checks if a pattern is found in a string
+    """Checks if a pattern is present in a string
 
     :param pattern: The regular expression pattern
     :param string: The string to search in
     :param flags: The options of the regular expression
     :return: :external:py:data:`True` if there is a match, :py:data:`False`
         otherwise
-    :rtype: bool
 
     Use this function if the resulting :py:class:`Match` is not required for
     further processing. It is slightly more efficient than using
@@ -372,7 +362,7 @@ def finditer(
     :param pattern: The regular expression pattern
     :param string: The string to search in
     :param flags: The options of the regular expression
-    :return: An :py:class:`~collections.abc.Generator` that yields
+    :return: A :py:class:`~collections.abc.Generator` that yields
         :py:class:`Match` objects.
     """
     return Pattern(pattern, flags).finditer(string)
@@ -431,7 +421,9 @@ def split(
     also returned as part of the resulting list. Non-matching groups are
     represented as :py:data:`None`.
     If maxsplit is nonzero, at most maxsplit splits occur, and the remainder of
-    the string is returned as the final element of the list. ::
+    the string is returned as the final element of the list.
+
+    .. code-block:: pycon
 
         >>> reqjs.split(r'\\W+', 'Words, words, words.')
         ['Words', 'words', 'words', '']
@@ -466,7 +458,8 @@ def sub(
     count: int = 0,
     flags: _FlagsType = NOFLAG,
 ) -> str:
-    """Search for non-overlapping matches of *pattern* in *string* and
+    """
+    Search for non-overlapping matches of *pattern* in *string* and
     replace those using the replacement string or function. If no match is
     found, the original string is returned.
 
@@ -485,8 +478,36 @@ def sub(
     does not contain any replacement fields it will be returned as is, for each
     match.
 
+    .. code-block:: pycon
+
+        >>> reqjs.sub(
+        ...     "^# (.+)", "<h1>{1}</h1>",
+        ...     "# Title 1\\ntext 1\\n# Title 2\\ntext 2",
+        ...     flags=reqjs.MULTILINE)
+        '<h1>Title 1</h1>\\ntext 1\\n<h1>Title 2</h1>\\ntext 2'
+
+        >>> reqjs.sub(
+        ...     "^# (?<title>.+)", "<h1>{title}</h1>",
+        ...     "# Title 1\\ntext 1\\n# Title 2\\ntext 2",
+        ...     flags=reqjs.MULTILINE)
+        '<h1>Title 1</h1>\\ntext 1\\n<h1>Title 2</h1>\\ntext 2'
+
+
     If *repl* is a function, it is called for every match. The function takes a
     single :py:obj:`Match` argument, and returns the replacement string.
+
+    .. code-block:: pycon
+
+        >>> def html_title(match_obj):
+        ...     level = len(match_obj["level"])
+        ...     return f"<h{level}>{match_obj['title']}</h{level}>"
+        ...
+        >>> reqjs.sub(
+        ...     "^(?<level>#{1,6}) (?<title>.+)", html_title,
+        ...     "# Title 1\\ntext1\\n### Title 3\\ntext 3",
+        ...     flags=reqjs.MULTILINE)
+        '<h1>Title 1</h1>\\ntext1\\n<h3>Title 3</h3>\\ntext 3'
+
 
     """
     return Pattern(pattern, flags).sub(repl, string, count)
