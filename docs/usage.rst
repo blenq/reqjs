@@ -111,41 +111,57 @@ Functions
 ^^^^^^^^^
 
 .. autofunction:: search
-
 .. autofunction:: test
-
 .. autofunction:: split
-
 .. autofunction:: findall
-
 .. autofunction:: finditer
-
 .. autofunction:: sub
+.. autofunction:: subn
+.. autofunction:: purge
 
-.. autofunction:: compile
 
-
-Regular Expression objects
+Regular Expression Objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: Pattern
-    :members:
+
+    .. automethod:: search
+    .. automethod:: test
+    .. automethod:: split
+    .. automethod:: findall
+    .. automethod:: finditer
+    .. automethod:: sub
+    .. automethod:: subn
+    .. autoproperty:: flags
+
+    .. py:property:: groups
+        :type: int
+
+        The number of capturing groups in the pattern.
+
+    .. py:property:: groupindex
+        :type: collections.abc.Mapping
+
+        A :py:class:`~collections.abc.Mapping` that maps group names to group
+        indices.
+
+    .. py:property:: pattern
+        :type: str
+
+        The pattern string from which the pattern object was compiled.
 
 
-.. automodule:: reqjs
-    :no-index:
-    :members:
-    :undoc-members:
-    :exclude-members: RegexFlag, Match, search, match, Pattern, compile, finditer
-    :member-order: bysource
-
-
+Match Objects
+^^^^^^^^^^^^^
 
 
 .. autoclass:: Match
-    :members:
-    :undoc-members:
-    :exclude-members: start, end
+
+    .. automethod:: expand(template: str) -> str
+    .. automethod:: group(*groups: int | str) -> str | None | tuple[str | None, ...]
+    .. method:: __getitem__(item: int | str) -> str
+
+        Identical to calling :py:meth:`Match.group(item) <Match.group>`.
 
     .. automethod:: start(group: int | str = 0, /) -> int
     .. automethod:: end(group: int | str = 0, /) -> int

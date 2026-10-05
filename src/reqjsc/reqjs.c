@@ -274,6 +274,19 @@ ReQJSMatch_getitem(ReQJSMatch *match, PyObject *obj)
 }
 
 
+PyDoc_STRVAR(
+    _match_group_doc,
+    "Returns one or more subgroups of the match. If there is a single "
+    "argument, the result is a single string; if there are multiple "
+    "arguments, the result is a tuple with one item per argument. No "
+    "arguments is the same as a single argument with the value zero (the "
+    "whole match is returned). A positive numeric group index, starting from "
+    "one, requests the corresponding capturing group. String arguments "
+    "correspond to the group names. Non-contributing groups are returned as "
+    ":py:data:`None`. An :py:class:`IndexError` will be raised "
+    "if the group does not exist.");
+
+
 static PyObject *
 ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 {
@@ -733,6 +746,13 @@ ReQJSMatch_next(ReQJSMatch *self,
 }
 
 
+PyDoc_STRVAR(
+    _match_expand_doc,
+    "Return the result of calling :py:meth:`str.format` on "
+    "*template* with the match group values as args and the named group "
+    "values as kwargs.");
+
+
 PyObject *
 ReQJSMatch_expand(ReQJSMatch *self, PyObject *args, PyObject *kwargs)
 {
@@ -830,7 +850,6 @@ match_repr(ReQJSMatch *self)
 }
 
 
-PyDoc_STRVAR(reqjs_match_doc, "A Match object.");
 PyDoc_STRVAR(
     _match_start_doc,
     "Returns the index of the start of the substring matched by `group`; "
@@ -857,13 +876,14 @@ PyDoc_STRVAR(
     ":rtype: int");
 
 static PyMethodDef ReQJSMatch_methods[] = {
-    { "group", (PyCFunction)ReQJSMatch_group, METH_FASTCALL, NULL },
+    { "group", (PyCFunction)ReQJSMatch_group, METH_FASTCALL,
+     _match_group_doc },
     { "start", (PyCFunction)ReQJSMatch_start, METH_FASTCALL,
      _match_start_doc },
     { "end", (PyCFunction)ReQJSMatch_end, METH_FASTCALL, _match_end_doc },
     { "span", (PyCFunction)ReQJSMatch_span, METH_FASTCALL, NULL },
     { "expand", (PyCFunction)ReQJSMatch_expand, METH_VARARGS | METH_KEYWORDS,
-     NULL },
+     _match_expand_doc },
     { "_next", (PyCFunction)ReQJSMatch_next,
      METH_METHOD | METH_FASTCALL | METH_KEYWORDS, NULL },
     { NULL, NULL }
@@ -878,6 +898,13 @@ static PyMemberDef ReQJSMatch_members[] = {
     { "endpos", Py_T_INT, offsetof(ReQJSMatch, endpos), Py_READONLY, NULL },
     { NULL }
 };
+
+PyDoc_STRVAR(
+    reqjs_match_doc,
+    "A Match object represents the successful result of a search for a "
+    ":py:class:`Pattern` in a *string*. It contains a list of groups which "
+    "consists of the entire match (group index zero) and the subgroups "
+    "which correspond to the capturing groups in the pattern.");
 
 static PyType_Slot match_type_slots[] = {
     { Py_tp_doc,       (char *)reqjs_match_doc },
@@ -1276,10 +1303,12 @@ static PyMemberDef ReQJSPattern_members[] = {
     { NULL }
 };
 
+PyDoc_STRVAR(_pattern_groups_doc,
+             "The number of capturing groups in the pattern.");
 
 static PyGetSetDef ReQJSPattern_getset[] = {
     { "_flags", (getter)ReQJSPattern_flags, NULL, NULL, NULL },
-    { "groups", (getter)ReQJSPattern_groups, NULL, NULL, NULL },
+    { "groups", (getter)ReQJSPattern_groups, NULL, _pattern_groups_doc, NULL },
     { "groupindex", (getter)ReQJSPattern_groupindex, NULL, NULL, NULL },
     { NULL }
 };

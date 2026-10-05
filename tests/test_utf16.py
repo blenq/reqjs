@@ -5,7 +5,7 @@ import reqjs
 
 class TestUTF16(TestCase):
     def test_utf16(self) -> None:
-        p = reqjs.compile("h")
+        p = reqjs.Pattern("h")
         m = p.search("€e")
         self.assertIsNone(m)
         m = p.search("€h")
@@ -14,13 +14,13 @@ class TestUTF16(TestCase):
 
 class TestOutsideBMP(TestCase):
     def test_outside_bmp_string(self) -> None:
-        p = reqjs.compile("h")
+        p = reqjs.Pattern("h")
         m = p.search("𐐷h")
         assert m is not None
         self.assertEqual(m.span(), (1, 2))
 
     def test_outside_bmp_offset(self) -> None:
-        p = reqjs.compile("h")
+        p = reqjs.Pattern("h")
         m = p.search("𐐷1234h", 2)
         assert m is not None
         self.assertEqual(m.pos, 2)
@@ -36,7 +36,7 @@ class TestOutsideBMP(TestCase):
         self.assertEqual(m.group(), "h")
 
     def test_end(self) -> None:
-        p = reqjs.compile("h$")
+        p = reqjs.Pattern("h$")
         m = p.search("𐐷testh")
         assert m is not None
         self.assertEqual(m.span(), (5, 6))
@@ -45,7 +45,7 @@ class TestOutsideBMP(TestCase):
         self.assertEqual(m.end(0), 6)
 
     def test_nested(self) -> None:
-        p = reqjs.compile("hi(.i(𐐷hell𐐷)(wow)?(hi)+)")
+        p = reqjs.Pattern("hi(.i(𐐷hell𐐷)(wow)?(hi)+)")
         m = p.search("start_hi𐐷i𐐷hell𐐷hihi_no")
         assert m is not None
         self.assertEqual(m.span(), (6, 20))
@@ -65,7 +65,7 @@ class TestOutsideBMP(TestCase):
         self.assertEqual(res, ["𐐷h", "𐐷h"])
 
     def test_no_unicode_flag(self) -> None:
-        p = reqjs.compile("hé(?<g𐐷>€l)𐐷lo", reqjs.ASCII)
+        p = reqjs.Pattern("hé(?<g𐐷>€l)𐐷lo", reqjs.ASCII)
         m = p.search("hi 𐐷 hé€l𐐷lo hi")
         self.assertIsNotNone(m)
         self.assertEqual(m.group(), "hé€l𐐷lo")

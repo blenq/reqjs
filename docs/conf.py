@@ -18,7 +18,11 @@ release = "0.1b"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx_copybutton",
+]
 
 autodoc_member_order = "bysource"
 autodoc_default_options = {
@@ -28,7 +32,8 @@ autodoc_preserve_defaults = True
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
+copybutton_exclude = ".linenos, .gp"
+maximum_signature_line_length = 95
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

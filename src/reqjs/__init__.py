@@ -15,7 +15,6 @@ from . import _reqjs
 from ._reqjs import Match, PatternError
 
 __all__ = [
-    "compile",
     "finditer",
     "search",
     "Match",
@@ -185,7 +184,7 @@ class Pattern(_reqjs.Pattern):
 
     @cached_property
     def flags(self) -> RegexFlag:
-        """The options flags of the :class:`Pattern`"""
+        """The effective option flags of the :class:`Pattern`."""
         return RegexFlag(self._flags)
 
     def search(
@@ -194,6 +193,15 @@ class Pattern(_reqjs.Pattern):
         pos: int = 0,
         endpos: int = sys.maxsize,
     ) -> Match | None:
+        """Search the *string* for a :py:class:`Match`.
+
+        :param string: The string to search in
+        :param pos: The position in the string where to start searching
+        :param endpos: The position in the string up to where searching takes
+            place
+        :return: A :py:class:`Match` object if found, `None` otherwise
+
+        """
         return self._search(string, pos, endpos)
 
     def test(
@@ -202,14 +210,15 @@ class Pattern(_reqjs.Pattern):
         pos: int = 0,
         endpos: int = sys.maxsize,
     ) -> bool:
-        """Checks if the pattern is found in the string
+        """Checks if the pattern is found in the *string*
 
         :param string: The string to search in
         :param pos: The position in the string where to start searching
         :param endpos: The position in the string up to where searching takes
             place
 
-        :return: `True` if there is a match, `False` otherwise
+        :return: :py:data:`True` if there is a match, :py:data:`False`
+            otherwise
         :rtype: bool
 
         """
@@ -218,7 +227,14 @@ class Pattern(_reqjs.Pattern):
     def finditer(
         self, string: str, pos: int = 0, endpos: int = sys.maxsize
     ) -> Generator[Match, None, None]:
-        """Yields matches"""
+        """Similar to :py:func:`finditer`, using the compiled pattern and given
+        *pos* end *endpos*.
+
+        :param string: The string to search in
+        :param pos: The position in the string where to start searching
+        :param endpos: The position in the string up to where searching takes
+            place
+        """
         match_obj = self._search(string, pos, endpos)
         while match_obj is not None:
             yield match_obj
@@ -227,6 +243,14 @@ class Pattern(_reqjs.Pattern):
     def findall(
         self, string: str, pos: int = 0, endpos: int = sys.maxsize
     ) -> list[str | tuple[str, ...]]:
+        """Similar to :py:func:`findall`, using the compiled pattern and given
+        *pos* end *endpos*.
+
+        :param string: The string to search in
+        :param pos: The position in the string where to start searching
+        :param endpos: The position in the string up to where searching takes
+            place
+        """
         num_groups = self.groups
         group_func: Callable[[Match, int], str | tuple[str, ...]]
         if num_groups < 2:
@@ -248,8 +272,8 @@ class Pattern(_reqjs.Pattern):
         maxsplit = index(maxsplit)
         prev_end = 0
         splits = 0
-        for splits, match_obj in enumerate(self.finditer(string)):
-            if maxsplit and splits >= maxsplit:
+        for splits, match_obj in enumerate(self.finditer(string), 1):
+            if maxsplit and splits > maxsplit:
                 break
             yield string[prev_end : match_obj.start()]
             yield from match_func(match_obj)
@@ -258,6 +282,8 @@ class Pattern(_reqjs.Pattern):
         return splits
 
     def split(self, string: str, maxsplit: int = 0) -> list[str | MaybeNone]:
+        """The same as :py:func:`split`, using the compiled pattern."""
+
         def yield_captured(match_obj: Match) -> Iterator[str | MaybeNone]:
             for group_idx in range(1, self.groups + 1):
                 yield match_obj.group(group_idx)
@@ -281,7 +307,15 @@ class Pattern(_reqjs.Pattern):
     def subn(
         self, repl: str | Callable[[Match], str], string: str, count: int = 0
     ) -> tuple[str, int]:
+        """The same as :py:func:`subn`, using the compiled pattern.
 
+        :param repl: The replacement string or function
+        :param string: The string to search in
+        :param count: The maximum number of occurrences to replace, zero means
+            no limit
+        :return: A tuple of the *string* with applied substitutions and the
+            number of replacements
+        """
         subs_made = 0
 
         def yield_parts() -> Iterator[str]:
@@ -293,6 +327,15 @@ class Pattern(_reqjs.Pattern):
     def sub(
         self, repl: str | Callable[[Match], str], string: str, count: int = 0
     ) -> str:
+        """The same as :py:func:`sub`, using the compiled pattern.
+
+        :param repl: The replacement string or function
+        :param string: The string to search in
+        :param count: The maximum number of occurrences to replace, zero means
+            no limit
+        :return: The *string* with applied substitutions
+
+        """
         return "".join(self._subn(repl, string, count))
 
     def __repr__(self) -> str:
@@ -301,11 +344,6 @@ class Pattern(_reqjs.Pattern):
             f"({repr(self.pattern)[:200]}"
             f"{'' if self.flags is UNICODE else f', {self.flags!r}'})"
         )
-
-
-compile = Pattern
-"""Alias of :py:class:`Pattern` analogous to the standard
-:py:func:`re.compile`."""
 
 
 def search(
@@ -459,9 +497,10 @@ def sub(
     flags: _FlagsType = NOFLAG,
 ) -> str:
     """
+
     Search for non-overlapping matches of *pattern* in *string* and
-    replace those using the replacement string or function. If no match is
-    found, the original string is returned.
+    replace those using the replacement string or function *repl*. If no match
+    is found, the original string is returned.
 
     :param pattern: The regular expression pattern
     :param repl: The replacement string or function
@@ -492,7 +531,6 @@ def sub(
         ...     flags=reqjs.MULTILINE)
         '<h1>Title 1</h1>\\ntext 1\\n<h1>Title 2</h1>\\ntext 2'
 
-
     If *repl* is a function, it is called for every match. The function takes a
     single :py:obj:`Match` argument, and returns the replacement string.
 
@@ -508,12 +546,35 @@ def sub(
         ...     flags=reqjs.MULTILINE)
         '<h1>Title 1</h1>\\ntext1\\n<h3>Title 3</h3>\\ntext 3'
 
-
     """
     return Pattern(pattern, flags).sub(repl, string, count)
 
 
+def subn(
+    pattern: str,
+    repl: str | Callable[[Match], str],
+    string: str,
+    *,
+    count: int = 0,
+    flags: _FlagsType = NOFLAG,
+) -> tuple[str, int]:
+    """Perform the same replacements as :py:func:`sub`, but return a tuple
+    with the resulting string and the number of replacements.
+
+    :param pattern: The regular expression pattern
+    :param repl: The replacement string or function
+    :param string: The string to search in
+    :param count: The maximum number of occurrences to replace, zero means no
+        limit
+    :param flags: The options of the regular expression
+    :return: A tuple of the *string* with applied substitutions and the number
+        of replacements
+
+    """
+    return Pattern(pattern, flags).subn(repl, string, count)
+
+
 def purge() -> None:
-    """Clear the regular expression caches"""
+    """Clear the regular expression cache."""
     _cache.clear()
     _cache2.clear()

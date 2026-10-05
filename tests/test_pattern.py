@@ -17,41 +17,41 @@ class PatternCase(TestCase):
         self.assertTrue(reqjs.NAMED_GROUPS in p.flags)
 
     def test_equal(self) -> None:
-        p1 = reqjs.compile("hi")
+        p1 = reqjs.Pattern("hi")
         self.assertEqual(p1, p1)
         reqjs.purge()
-        p2 = reqjs.compile("hi")
+        p2 = reqjs.Pattern("hi")
         self.assertEqual(p1, p2)
 
     def test_not_equal(self) -> None:
-        p1 = reqjs.compile("hi")
-        p2 = reqjs.compile("hello")
+        p1 = reqjs.Pattern("hi")
+        p2 = reqjs.Pattern("hello")
         reqjs.purge()
-        p3 = reqjs.compile("hi")
+        p3 = reqjs.Pattern("hi")
         self.assertFalse(p1 != p3)
         self.assertNotEqual(p1, p2)
         self.assertNotEqual(p1, 34)
 
     def test_not_equal_flags(self) -> None:
-        p1 = reqjs.compile("hi")
-        p2 = reqjs.compile("hi", reqjs.RegexFlag.ASCII)
+        p1 = reqjs.Pattern("hi")
+        p2 = reqjs.Pattern("hi", reqjs.RegexFlag.ASCII)
         self.assertNotEqual(p1, p2)
 
     def test_flag(self) -> None:
-        p = reqjs.compile("hi")
+        p = reqjs.Pattern("hi")
         self.assertIs(reqjs.RegexFlag(p.flags), reqjs.UNICODE)
-        p = reqjs.compile("hi", reqjs.NAMED_GROUPS)
+        p = reqjs.Pattern("hi", reqjs.NAMED_GROUPS)
         self.assertIs(reqjs.RegexFlag(p.flags), reqjs.UNICODE)
 
     def test_match_attrs(self) -> None:
-        p = reqjs.compile("hi")
+        p = reqjs.Pattern("hi")
         m = p.search("_hi_")
         assert m is not None
         self.assertEqual(m.string, "_hi_")
         self.assertEqual(m.re, p)
 
     def test_group(self) -> None:
-        p = reqjs.compile(
+        p = reqjs.Pattern(
             "(\\d+(?<farewell>goodbye))\\s*(?<maybe>really)?(?<greeting>hello)"
         )
         m = p.search("Wow 23goodbye  hello hi")
@@ -78,7 +78,7 @@ class PatternCase(TestCase):
             m.group(None)
 
     def test_get_item(self) -> None:
-        p = reqjs.compile(
+        p = reqjs.Pattern(
             "(\\d+(?<farewell>goodbye))\\s*(?<maybe>really)?(?<greeting>hello)"
         )
         m = p.search("Wow 23goodbye  hello hi")
@@ -93,7 +93,7 @@ class PatternCase(TestCase):
             m[-2]
 
     def test_offset(self) -> None:
-        p = reqjs.compile("hi")
+        p = reqjs.Pattern("hi")
         m = p.search("hi__hi", 2)
         assert m is not None
         self.assertEqual(m.group(), "hi")
@@ -264,6 +264,15 @@ class PatternCase(TestCase):
         )
         self.assertEqual(res, "<h1>Title</h1>\ntext\n<h1>Title 2</h1>")
 
+    def test_subn(self):
+        res = reqjs.subn(
+            "^# (.+)",
+            "<h1>{1}</h1>",
+            "# Title\ntext\n# Title 2",
+            flags=reqjs.MULTILINE,
+        )
+        self.assertEqual(res, ("<h1>Title</h1>\ntext\n<h1>Title 2</h1>", 2))
+
     def test_cache(self):
         p1 = reqjs.Pattern("hi")
         p2 = reqjs.Pattern("hi")
@@ -339,8 +348,9 @@ class PatternCase(TestCase):
 class TestAnalogy(TestCase):
     def test_pattern_weakref(self):
         for mod in re, reqjs:
+            compile = getattr(mod, "compile", mod.Pattern)
             with self.subTest(mod=mod):
-                p = mod.compile(r"\w{2}")
+                p = compile(r"\w{2}")
                 ref = weakref.ref(p)
                 self.assertIs(ref(), p)
 
@@ -362,10 +372,10 @@ class TestAnalogy(TestCase):
             repr(p), r"re.compile('\\w{2}', re.IGNORECASE|re.ASCII)"
         )
 
-        p = reqjs.compile("\\w{2}")
+        p = reqjs.Pattern("\\w{2}")
         self.assertEqual(repr(p), r"reqjs.Pattern('\\w{2}')")
 
-        p = reqjs.compile("\\w{2}", reqjs.STICKY | reqjs.IGNORECASE)
+        p = reqjs.Pattern("\\w{2}", reqjs.STICKY | reqjs.IGNORECASE)
         self.assertEqual(
             repr(p),
             r"reqjs.Pattern('\\w{2}', reqjs.IGNORECASE|reqjs.UNICODE|reqjs.STICKY)",
@@ -376,7 +386,7 @@ class TestAnalogy(TestCase):
         m = p.search(" hi ")
         self.assertEqual(repr(m), "<re.Match object; span=(1, 3), match='hi'>")
 
-        p = reqjs.compile("hi")
+        p = reqjs.Pattern("hi")
         m = p.search(" hi ")
         self.assertEqual(
             repr(m), "<reqjs.Match object; span=(1, 3), match='hi'>"
