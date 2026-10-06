@@ -24,10 +24,6 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-autodoc_member_order = "bysource"
-autodoc_default_options = {
-    "member-order": "bysource",
-}
 autodoc_preserve_defaults = True
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 templates_path = ["_templates"]

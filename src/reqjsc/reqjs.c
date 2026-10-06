@@ -276,7 +276,7 @@ ReQJSMatch_getitem(ReQJSMatch *match, PyObject *obj)
 
 PyDoc_STRVAR(
     _match_group_doc,
-    "Returns one or more subgroups of the match. If there is a single "
+    "Returns one or more group values of the match. If there is a single "
     "argument, the result is a single string; if there are multiple "
     "arguments, the result is a tuple with one item per argument. No "
     "arguments is the same as a single argument with the value zero (the "
@@ -785,7 +785,9 @@ PyDoc_STRVAR(
     _match_expand_doc,
     "Return the result of calling :py:meth:`str.format` on "
     "*template* with the match group values as args and the named group "
-    "values as kwargs.");
+    "values as kwargs.\n\n"
+    ":param template: The format string\n"
+    ":return: The formatted string\n");
 
 
 PyObject *
