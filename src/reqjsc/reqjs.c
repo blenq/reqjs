@@ -319,21 +319,14 @@ ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 
 
 static PyObject *
-ReQJSMatch_groups(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
+ReQJSMatch_groups(ReQJSMatch *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject *_default;
+    static char *kwlist[] = { "default", NULL };
+    PyObject *empty = Py_None;
     PyObject *groups;
     Py_ssize_t group_len;
 
-    nargs = PyVectorcall_NARGS(nargs);
-    if (nargs == 0) {
-        _default = Py_None;
-    }
-    else if (nargs == 1) {
-        _default = args[0];
-    }
-    else {
-        PyErr_SetString(PyExc_TypeError, "groups() takes at most 1 argument");
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &empty)) {
         return NULL;
     }
     group_len = Py_SIZE(self) - 1;
@@ -342,10 +335,10 @@ ReQJSMatch_groups(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
         return NULL;
     }
     for (Py_ssize_t i = 0; i < group_len; i++) {
-        PyObject *item = _match_group_from_idx(self, i + 1, _default);
+        PyObject *item = _match_group_from_idx(self, i + 1, empty);
         if (item == NULL) {
-            Py_CLEAR(groups);
-            break;
+            Py_DECREF(groups);
+            return NULL;
         }
         PyTuple_SET_ITEM(groups, i, item);
     }
@@ -915,7 +908,8 @@ PyDoc_STRVAR(
 static PyMethodDef ReQJSMatch_methods[] = {
     { "group", (PyCFunction)ReQJSMatch_group, METH_FASTCALL,
      _match_group_doc },
-    { "groups", (PyCFunction)ReQJSMatch_groups, METH_FASTCALL, NULL },
+    { "groups", (PyCFunction)ReQJSMatch_groups, METH_VARARGS | METH_KEYWORDS,
+     NULL },
     { "start", (PyCFunction)ReQJSMatch_start, METH_FASTCALL,
      _match_start_doc },
     { "end", (PyCFunction)ReQJSMatch_end, METH_FASTCALL, _match_end_doc },
