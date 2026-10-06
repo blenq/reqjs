@@ -318,6 +318,41 @@ ReQJSMatch_group(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 }
 
 
+static PyObject *
+ReQJSMatch_groups(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyObject *_default;
+    PyObject *groups;
+    Py_ssize_t group_len;
+
+    nargs = PyVectorcall_NARGS(nargs);
+    if (nargs == 0) {
+        _default = Py_None;
+    }
+    else if (nargs == 1) {
+        _default = args[0];
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "groups() takes at most 1 argument");
+        return NULL;
+    }
+    group_len = Py_SIZE(self) - 1;
+    groups = PyTuple_New(group_len);
+    if (groups == NULL) {
+        return NULL;
+    }
+    for (Py_ssize_t i = 0; i < group_len; i++) {
+        PyObject *item = _match_group_from_idx(self, i + 1, _default);
+        if (item == NULL) {
+            Py_CLEAR(groups);
+            break;
+        }
+        PyTuple_SET_ITEM(groups, i, item);
+    }
+    return groups;
+}
+
+
 static Py_ssize_t
 _match_idx_from_args(ReQJSMatch *self, PyObject *const *args, Py_ssize_t nargs)
 {
@@ -878,6 +913,7 @@ PyDoc_STRVAR(
 static PyMethodDef ReQJSMatch_methods[] = {
     { "group", (PyCFunction)ReQJSMatch_group, METH_FASTCALL,
      _match_group_doc },
+    { "groups", (PyCFunction)ReQJSMatch_groups, METH_FASTCALL, NULL },
     { "start", (PyCFunction)ReQJSMatch_start, METH_FASTCALL,
      _match_start_doc },
     { "end", (PyCFunction)ReQJSMatch_end, METH_FASTCALL, _match_end_doc },

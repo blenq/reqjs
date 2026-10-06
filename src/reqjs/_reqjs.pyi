@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Mapping
-from typing import Any, Literal, TypeAlias, overload
+from typing import Any, Literal, TypeAlias, TypeVar, overload
 
 if sys.version_info < (3, 11):
     from typing_extensions import Self
@@ -13,6 +13,8 @@ MaybeNone: TypeAlias = Any
 
 class PatternError(Exception): ...
 
+_T = TypeVar("_T")
+
 class Match:
     def span(self, group: int | str = 0, /) -> tuple[int, int]: ...
     @overload
@@ -23,6 +25,10 @@ class Match:
     def group(
         self, group1: str | int, group2: str | int, /, *groups: str | int
     ) -> tuple[str | MaybeNone, ...]: ...
+    @overload
+    def groups(self) -> tuple[str | MaybeNone, ...]: ...
+    @overload
+    def groups(self, default: _T) -> tuple[str | _T, ...]: ...
     @property
     def string(self) -> str: ...
     @property

@@ -77,6 +77,16 @@ class PatternCase(TestCase):
         with self.assertRaises(IndexError):
             m.group(None)
 
+    def test_match_groups(self):
+        m = reqjs.search(r"(\d+)\.(\d+)", "24.1632")
+        self.assertEqual(m.groups(), ("24", "1632"))
+
+        m = reqjs.search(r"(\d+)\.(\d+)?", "24.")
+        self.assertEqual(m.groups(), ("24", None))
+
+        m = reqjs.search(r"(\d+)\.(\d+)?", "24.")
+        self.assertEqual(m.groups("-"), ("24", "-"))
+
     def test_get_item(self) -> None:
         p = reqjs.Pattern(
             "(\\d+(?<farewell>goodbye))\\s*(?<maybe>really)?(?<greeting>hello)"
